@@ -43,7 +43,7 @@ async function pickCards(labels) {
 
 // 1. Landing
 await page.goto(BASE, { waitUntil: "networkidle" });
-step("landing loads", (await heading()).includes("Travel that works for you"));
+step("landing loads", (await heading()).includes("Travel with purpose"));
 
 // 2. Get Started -> auth
 await page.getByRole("link", { name: "Get Started" }).first().click();
@@ -65,8 +65,8 @@ await page.locator("#email").fill(email);
 await page.locator("#password").fill(password);
 await page.getByRole("checkbox").check();
 await page.getByRole("button", { name: "Create Account" }).click();
-await page.waitForURL("**/profile", { timeout: 45000 });
-step("signup creates account and lands on /profile", page.url().includes("/profile"));
+await page.waitForURL("**/accessibility", { timeout: 45000 });
+step("signup creates account and lands on /accessibility", page.url().includes("/accessibility"));
 
 // 5. Profile wizard
 await page.getByRole("button", { name: /get started/i }).click();
@@ -139,9 +139,14 @@ await page.waitForLoadState("networkidle");
 step("dashboard reached", page.url().includes("/dashboard"));
 
 const body = await page.locator("body").innerText();
-step("greeting shown", /Good (morning|afternoon|evening)/.test(body));
+step("greeting shown", /Welcome back/.test(body));
+step("dashboard shows the signed-in traveller", body.includes("Welcome back") && body.includes("E2E"));
+step("dashboard shows recommended destinations from the catalogue", /Matheran|Goa|Manali|Munnar/.test(body));
+
+// The stored accessibility answers are reviewable on their own screen.
+await page.goto(`${BASE}/accessibility`, { waitUntil: "networkidle" });
+const accessibilityBody = await page.locator("body").innerText();
 for (const expected of [
-  "E2E",
   "Step-free access",
   "Elevator / lift",
   "Minimal walking",
@@ -150,11 +155,12 @@ for (const expected of [
   "Please keep every transfer step-free.",
   "I cannot walk continuously for more than 10 minutes.",
 ]) {
-  step(`dashboard shows "${expected}"`, body.includes(expected));
+  step(`accessibility profile shows "${expected}"`, accessibilityBody.includes(expected));
 }
-step("dashboard shows destinations", /Mahabaleshwar|Lonavala|Alibaug/.test(body));
+await page.goto(`${BASE}/dashboard`, { waitUntil: "networkidle" });
 
 // 7. Persistence across reload
+await page.goto(`${BASE}/accessibility`, { waitUntil: "networkidle" });
 await page.reload({ waitUntil: "networkidle" });
 const afterReload = await page.locator("body").innerText();
 step(
@@ -163,9 +169,11 @@ step(
     afterReload.includes("Vegetarian") &&
     afterReload.includes("Please keep every transfer step-free."),
 );
+await page.goto(`${BASE}/dashboard`, { waitUntil: "networkidle" });
 
 // 8. Logout + login round trip
-await page.getByRole("button", { name: /Log out/i }).click();
+await page.getByRole("button", { name: "Account menu" }).click();
+await page.getByRole("menuitem", { name: /Log out/i }).click();
 await page.waitForURL(BASE.replace(/\/$/, "") + "/", { timeout: 45000 });
 step("logout returns to landing", page.url().replace(/\/$/, "") === BASE.replace(/\/$/, ""));
 
@@ -181,7 +189,7 @@ step("login with a completed profile goes straight to /dashboard", page.url().in
 
 // 9. Guard rails
 await page.goto(`${BASE}/profile`, { waitUntil: "networkidle" });
-step("completed profile visiting /profile redirects to /dashboard", page.url().includes("/dashboard"));
+step("profile page shows the traveller's own data", (await page.locator("body").innerText()).includes("E2E"));
 
 // 10. Mobile
 await page.setViewportSize({ width: 390, height: 844 });
@@ -212,8 +220,8 @@ if (menuOpened) {
   const menuText = await mobileMenu.innerText();
   const hasMarketingLinks =
     menuText.includes("Explore") &&
-    menuText.includes("How It Works") &&
-    menuText.includes("For Businesses");
+    menuText.includes("Eco Challenges") &&
+    menuText.includes("Community");
   // This user is signed in, so the CTA should be the dashboard, not Login.
   const hasCorrectCta = menuText.includes("Go to Dashboard");
   step(

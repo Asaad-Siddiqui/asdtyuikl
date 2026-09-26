@@ -1,9 +1,10 @@
 import Logo from "@/components/Logo";
 
 const LINKS = [
-  { href: "/#explore", label: "Explore" },
-  { href: "/#how-it-works", label: "How It Works" },
-  { href: "/#businesses", label: "For Businesses" },
+  { href: "/explore", label: "Explore" },
+  { href: "/challenges", label: "Eco Challenges" },
+  { href: "/impact", label: "My Impact" },
+  { href: "/community", label: "Community" },
   { href: "/auth?mode=login", label: "Login" },
 ];
 
@@ -13,9 +14,9 @@ export default function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div className="max-w-sm">
           <Logo />
-          <p className="mt-4 text-sm leading-relaxed text-ink-500">
-            Personalized, accessible and lower-impact travel. Phase 1 of the
-            Wayfare platform.
+          <p className="mt-4 text-sm leading-relaxed text-sand-700">
+            AI-powered sustainable and accessible travel. Plan lower-footprint
+            trips, complete eco-challenges and track your real impact.
           </p>
         </div>
 
@@ -37,7 +38,7 @@ export default function Footer() {
 
       <div className="border-t border-ink-200">
         <p className="mx-auto max-w-6xl px-4 py-6 text-xs text-ink-400 sm:px-6 lg:px-8">
-          © {new Date().getFullYear()} Wayfare. Built for the sustainable &
+          © {new Date().getFullYear()} Travello. Built for the sustainable &
           accessible travel hackathon.
         </p>
       </div>

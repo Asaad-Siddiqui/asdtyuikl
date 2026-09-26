@@ -265,13 +265,22 @@ export default function ProfileWizard({
       const text = answers.specialRequirement.trim();
       return text ? [text.slice(0, 140)] : [];
     }
-    return labelSelections(activeKey, {
+    const labels = labelSelections(activeKey, {
       travelerTypes: answers.travelerTypes,
       mobility: answers.requirements.mobility,
       visual: answers.requirements.visual,
       hearing: answers.requirements.hearing,
       dietary: answers.dietary,
     });
+
+    // The mobility step also captures a free-text note; echo it so the review
+    // shows exactly what the traveller told us.
+    if (activeKey === "mobility") {
+      const note = answers.details.mobility.trim();
+      if (note) labels.push(note.slice(0, 160));
+    }
+
+    return labels;
   }, [activeKey, answers]);
 
   const handleContinue = useCallback(async () => {

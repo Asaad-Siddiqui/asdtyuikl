@@ -42,7 +42,7 @@ export default async function AuthPage({
   const user = await getCurrentUser();
   if (user) {
     const profile = await getProfileData(user.id);
-    redirect(profile.completed ? "/dashboard" : "/profile");
+    redirect(profile.completed ? "/dashboard" : "/accessibility");
   }
 
   const rawMode = params.mode;

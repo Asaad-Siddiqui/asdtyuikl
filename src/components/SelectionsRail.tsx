@@ -18,6 +18,8 @@ type RailRow = {
   count: number;
   summary: string;
   highlight?: string;
+  /** Free-text the traveller added alongside their selections. */
+  note?: string;
 };
 
 function join(values: string[]): string {
@@ -46,6 +48,8 @@ export default function SelectionsRail({
     ...toLabels(profile.requirements.hearing, HEARING_LABELS),
   ];
   const dietary = toLabels(profile.dietary, DIETARY_LABELS);
+  const mobilityNote = profile.details.mobility.trim();
+  const dietaryNote = profile.details.dietary.trim();
 
   const topPreference = [...PREFERENCE_META].sort(
     (a, b) => profile.preferences[b.key] - profile.preferences[a.key],
@@ -65,6 +69,7 @@ export default function SelectionsRail({
       icon: "accessibility",
       count: accessibility.length,
       summary: join(accessibility),
+      note: mobilityNote || undefined,
     },
     {
       key: "dietary",
@@ -72,6 +77,7 @@ export default function SelectionsRail({
       icon: "utensils",
       count: dietary.length,
       summary: join(dietary),
+      note: dietaryNote || undefined,
     },
     {
       key: "priority",
@@ -94,7 +100,11 @@ export default function SelectionsRail({
   ];
 
   const answered = rows.filter(
-    (row) => row.count > 0 || Boolean(row.summary) || Boolean(row.highlight),
+    (row) =>
+      row.count > 0 ||
+      Boolean(row.summary) ||
+      Boolean(row.highlight) ||
+      Boolean(row.note),
   ).length;
 
   return (
@@ -112,7 +122,11 @@ export default function SelectionsRail({
 
       <ul className="mt-4 space-y-3.5">
         {rows.map((row) => {
-          const hasContent = row.count > 0 || Boolean(row.summary) || Boolean(row.highlight);
+          const hasContent =
+            row.count > 0 ||
+            Boolean(row.summary) ||
+            Boolean(row.highlight) ||
+            Boolean(row.note);
 
           return (
             <li key={row.key}>
@@ -147,6 +161,11 @@ export default function SelectionsRail({
                     {row.summary && (
                       <p className="line-clamp-2 text-xs leading-relaxed text-ink-600">
                         {row.summary}
+                      </p>
+                    )}
+                    {row.note && (
+                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-ink-500 italic">
+                        &ldquo;{row.note}&rdquo;
                       </p>
                     )}
                   </>

@@ -8,9 +8,10 @@ import Logo from "@/components/Logo";
 import { buttonClasses } from "@/components/Button";
 
 const NAV_LINKS = [
-  { href: "/#explore", label: "Explore" },
-  { href: "/#how-it-works", label: "How It Works" },
-  { href: "/#businesses", label: "For Businesses" },
+  { href: "/explore", label: "Explore" },
+  { href: "/challenges", label: "Eco Challenges" },
+  { href: "/community", label: "Community" },
+  { href: "/impact", label: "My Impact" },
 ];
 
 export default function Navbar({

@@ -74,9 +74,17 @@ export default function AuthForm({
         return;
       }
 
-      // New and returning users both continue to the accessibility profile;
-      // the page itself forwards completed profiles to the dashboard.
-      router.replace("/profile");
+      // Sign-ups continue to the accessibility questionnaire; returning users go
+      // straight to their dashboard. A redirect from a protected route wins.
+      const requested = new URLSearchParams(window.location.search).get("next");
+      const destination =
+        requested && requested.startsWith("/")
+          ? requested
+          : mode === "signup"
+            ? "/accessibility"
+            : "/dashboard";
+
+      router.replace(destination);
       router.refresh();
     } catch {
       setFormError(
@@ -280,7 +288,7 @@ export default function AuthForm({
             </>
           ) : (
             <>
-              New to Wayfare?{" "}
+              New to Travello?{" "}
               <button
                 type="button"
                 onClick={() => switchMode("signup")}

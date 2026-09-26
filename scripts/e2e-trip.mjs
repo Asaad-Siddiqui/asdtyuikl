@@ -73,7 +73,7 @@ await page.locator("#email").fill(email);
 await page.locator("#password").fill(password);
 await page.getByRole("checkbox").check();
 await page.getByRole("button", { name: "Create Account" }).click();
-await page.waitForURL("**/profile", { timeout: 45000 });
+await page.waitForURL("**/accessibility", { timeout: 45000 });
 
 await page.getByRole("button", { name: /get started/i }).click();
 await waitForText("Who will you be traveling with?");
@@ -314,11 +314,11 @@ step("PDF is a real document, not a screenshot", pdfBuffer.length > 2000, `${pdf
 
 await page.goto(`${BASE}/dashboard`, { waitUntil: "networkidle" });
 const dashBody = await page.locator("body").innerText();
-step("dashboard Your trips lists the saved trip from Neon", dashBody.includes("Mahabaleshwar") && dashBody.includes("View Trip"));
-step("dashboard trip card shows status, cost and CO₂", dashBody.includes("confirmed") && /₹[\d,]+/.test(dashBody) && /Est\. CO₂/.test(dashBody));
+step("dashboard Your trips lists the saved trip from Neon", dashBody.includes("Mahabaleshwar") && dashBody.includes("View full itinerary"));
+step("dashboard trip card shows cost and estimated CO₂", /₹[\d,]+/.test(dashBody) && /est\. CO₂/i.test(dashBody));
 step("empty state is gone once a trip exists", !dashBody.includes("No trips planned yet"));
 
-await page.getByRole("link", { name: /View Trip/i }).first().click();
+await page.getByRole("link", { name: /Mahabaleshwar/i }).first().click();
 await page.waitForURL(/\/trips\//, { timeout: 45000 });
 step("saved trip can be reopened later", await waitForText("Your trip is ready", 30000));
 

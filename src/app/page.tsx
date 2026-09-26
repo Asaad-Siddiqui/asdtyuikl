@@ -1,76 +1,76 @@
-import BusinessesSection from "@/components/BusinessesSection";
-import ComingNext from "@/components/ComingNext";
-import FeatureCard from "@/components/FeatureCard";
 import Footer from "@/components/Footer";
-import Hero from "@/components/Hero";
-import HowItWorks from "@/components/HowItWorks";
 import Navbar from "@/components/Navbar";
+import { AppProvider } from "@/components/travello/AppProvider";
+import LandingPage from "@/components/travello/pages/LandingPage";
 import { getCurrentUser } from "@/lib/auth";
+import { listChallenges, listDestinations } from "@/lib/travello-service";
+import type { AppData } from "@/lib/travello-service";
 
 export const dynamic = "force-dynamic";
 
-const FEATURES = [
-  {
-    icon: "accessibility" as const,
-    title: "Personalized",
-    description:
-      "Travel recommendations based on your individual accessibility requirements.",
-  },
-  {
-    icon: "leaf" as const,
-    title: "Sustainable",
-    description:
-      "Compare environmental impact and discover greener travel choices.",
-  },
-  {
-    icon: "sparkles" as const,
-    title: "Intelligent",
-    description: "AI helps create travel recommendations around your needs.",
-  },
-];
-
-export default async function LandingPage() {
+/**
+ * Public landing page — the Travello hero from ZIP 1, kept intact.
+ *
+ * It renders inside a read-only provider so the featured destinations and the
+ * daily challenge come from the real catalogue, while every call-to-action
+ * routes a signed-out visitor to authentication (the protected routes redirect
+ * there anyway).
+ */
+export default async function HomePage() {
   const user = await getCurrentUser();
+
+  let destinations: AppData["destinations"] = [];
+  let challenges: AppData["challenges"] = [];
+
+  try {
+    [destinations, challenges] = await Promise.all([
+      listDestinations(),
+      listChallenges(),
+    ]);
+  } catch (error) {
+    console.error("[landing] could not load catalogue:", error);
+  }
+
+  const guestData: AppData = {
+    user: {
+      id: "guest",
+      displayName: user?.name ?? "Guest",
+      username: "",
+      avatarUrl: "",
+      bio: "",
+      role: "traveler",
+      impactPoints: 0,
+      challengesCompleted: 0,
+      destinationsVisited: 0,
+      badgesEarned: 0,
+      co2Avoided: 0,
+    },
+    stats: {
+      points: 0,
+      challengesCompleted: 0,
+      challengesInProgress: 0,
+      destinationsVisited: 0,
+      badgesEarned: 0,
+      co2Avoided: 0,
+      approvedReports: 0,
+    },
+    destinations,
+    challenges,
+    completions: [],
+    reports: [],
+    posts: [],
+    savedDestinationIds: [],
+    trips: [],
+  };
 
   return (
     <>
       <Navbar userName={user?.name ?? null} />
 
       <main id="main" className="flex-1">
-        <Hero />
-
-        <section
-          aria-labelledby="features-heading"
-          className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20"
-        >
-          <div className="max-w-2xl">
-            <p className="text-xs font-semibold tracking-wide text-brand-600 uppercase">
-              Why Wayfare
-            </p>
-            <h2
-              id="features-heading"
-              className="mt-3 text-3xl font-semibold sm:text-4xl"
-            >
-              Built around you, not the average traveller
-            </h2>
-          </div>
-
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            {FEATURES.map((feature, index) => (
-              <FeatureCard
-                key={feature.title}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                delay={index * 0.08}
-              />
-            ))}
-          </div>
-        </section>
-
-        <HowItWorks />
-        <ComingNext />
-        <BusinessesSection />
+        <AppProvider initial={guestData} guest>
+          <LandingPage />
+        </AppProvider>
       </main>
 
       <Footer />

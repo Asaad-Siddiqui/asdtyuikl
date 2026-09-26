@@ -2,7 +2,19 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { SESSION_COOKIE, verifySession } from "@/lib/session";
 
-const PROTECTED_PREFIXES = ["/profile", "/dashboard", "/plan", "/trips"];
+/** Every route that requires a signed-in traveller. */
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/explore",
+  "/trips",
+  "/challenges",
+  "/impact",
+  "/reports",
+  "/community",
+  "/profile",
+  "/plan",
+  "/accessibility",
+];
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -36,9 +48,15 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/profile/:path*",
     "/dashboard/:path*",
-    "/plan/:path*",
+    "/explore/:path*",
     "/trips/:path*",
+    "/challenges/:path*",
+    "/impact/:path*",
+    "/reports/:path*",
+    "/community/:path*",
+    "/profile/:path*",
+    "/plan/:path*",
+    "/accessibility/:path*",
   ],
 };
