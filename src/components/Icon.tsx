@@ -37,6 +37,7 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M10.4 18.5a1.9 1.9 0 0 0 3.2 0" />
     </>
   ),
+  bolt: <path d="M13.4 2.5 4.8 13.2h6l-1.2 8.3 8.6-10.7h-6Z" />,
   braille: (
     <g fill="currentColor" stroke="none">
       <circle cx="8" cy="6" r="1.5" />
@@ -54,6 +55,22 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M8 20v-3" />
       <path d="M16 20v-3" />
       <path d="M8 7.5h8" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="15" rx="2.2" />
+      <path d="M3.5 10h17" />
+      <path d="M8 3.5v4" />
+      <path d="M16 3.5v4" />
+    </>
+  ),
+  car: (
+    <>
+      <path d="M4 13.5 5.6 8.6A1.6 1.6 0 0 1 7.1 7.5h9.8a1.6 1.6 0 0 1 1.5 1.1L20 13.5" />
+      <path d="M2.6 13.5h18.8a1 1 0 0 1 1 1v3.1a1 1 0 0 1-1 1H2.6a1 1 0 0 1-1-1v-3.1a1 1 0 0 1 1-1Z" />
+      <circle cx="7.2" cy="17.1" r="1.3" />
+      <circle cx="16.8" cy="17.1" r="1.3" />
     </>
   ),
   captions: (
@@ -77,10 +94,23 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="m15.6 8.4-2.1 5.1-5.1 2.1 2.1-5.1 5.1-2.1Z" />
     </>
   ),
+  download: (
+    <>
+      <path d="M12 3.5v11" />
+      <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+      <path d="M4.5 20.5h15" />
+    </>
+  ),
   ear: (
     <>
       <path d="M6.5 9.4a5.5 5.5 0 1 1 11 0c0 3.9-4 4.4-4 7.4a3 3 0 0 1-6 0" />
       <path d="M11 9.4a1.5 1.5 0 0 1 2.9.5" />
+    </>
+  ),
+  edit: (
+    <>
+      <path d="M16.6 3.9a2.2 2.2 0 0 1 3.1 3.1L7.6 19.1l-4.2 1 1-4.2Z" />
+      <path d="m14.8 5.6 3.7 3.7" />
     </>
   ),
   elevator: (
@@ -203,6 +233,16 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M3 13a1.6 1.6 0 0 1 3.2 0v3H17.8v-3a1.6 1.6 0 0 1 3.2 0v4.8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V13Z" />
       <path d="M6 19v1.6" />
       <path d="M18 19v1.6" />
+    </>
+  ),
+  train: (
+    <>
+      <rect x="5" y="3" width="14" height="13" rx="2.4" />
+      <path d="M5 10h14" />
+      <path d="M8.6 16l-2 4" />
+      <path d="M15.4 16l2 4" />
+      <path d="M4 20h16" />
+      <path d="M9.2 6.6h5.6" />
     </>
   ),
   sparkles: (

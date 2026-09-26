@@ -56,8 +56,14 @@ export default function Navbar({
                 {userName.split(" ")[0]}
               </Link>
               <Link
-                href="/dashboard"
+                href="/plan"
                 className={buttonClasses({ variant: "primary", size: "md" })}
+              >
+                Plan a trip
+              </Link>
+              <Link
+                href="/dashboard"
+                className={buttonClasses({ variant: "secondary", size: "md" })}
               >
                 Dashboard
               </Link>
@@ -111,20 +117,36 @@ export default function Navbar({
                 </li>
               ))}
             {userName ? (
-              <li>
-                <Link
-                  href="/dashboard"
-                  onClick={closeMenu}
-                  className={buttonClasses({
-                    variant: "primary",
-                    size: "lg",
-                    fullWidth: true,
-                    className: "mt-2",
-                  })}
-                >
-                  Go to Dashboard
-                </Link>
-              </li>
+              <>
+                <li>
+                  <Link
+                    href="/plan"
+                    onClick={closeMenu}
+                    className={buttonClasses({
+                      variant: "primary",
+                      size: "lg",
+                      fullWidth: true,
+                      className: "mt-2",
+                    })}
+                  >
+                    Plan a trip
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/dashboard"
+                    onClick={closeMenu}
+                    className={buttonClasses({
+                      variant: "secondary",
+                      size: "lg",
+                      fullWidth: true,
+                      className: "mt-2",
+                    })}
+                  >
+                    Go to Dashboard
+                  </Link>
+                </li>
+              </>
             ) : (
               <>
                 <li>

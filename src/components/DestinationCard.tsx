@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import Link from "next/link";
 
 import Icon from "@/components/Icon";
 import type { ScoredDestination } from "@/lib/destinations";
@@ -94,7 +92,6 @@ function SceneArt({ scene }: { scene: ScoredDestination["destination"]["scene"] 
 export default function DestinationCard({ scored }: { scored: ScoredDestination }) {
   const { destination, accessibilityMatch, sustainabilityScore, matchedRequirements, unmetRequirements } =
     scored;
-  const [exploreNote, setExploreNote] = useState(false);
 
   return (
     <article className="card card-hover flex flex-col overflow-hidden">
@@ -162,25 +159,13 @@ export default function DestinationCard({ scored }: { scored: ScoredDestination 
         )}
 
         <div className="mt-auto pt-5">
-          <button
-            type="button"
-            onClick={() => setExploreNote(true)}
+          <Link
+            href="/plan"
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-ink-200 bg-surface px-5 text-sm font-medium text-ink-800 transition-colors hover:border-brand-300 hover:text-brand-700"
           >
-            Explore
+            Plan a trip here
             <Icon name="arrowRight" className="h-4.5 w-4.5" />
-          </button>
-
-          {exploreNote && (
-            <p
-              role="status"
-              className="mt-3 flex items-start gap-2 rounded-xl border border-ink-200 bg-ink-50 px-3 py-2 text-xs text-ink-500"
-            >
-              <Icon name="sparkles" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Full trip planning for {destination.name} arrives in Phase 2 —
-              your profile is already set up for it.
-            </p>
-          )}
+          </Link>
         </div>
       </div>
     </article>

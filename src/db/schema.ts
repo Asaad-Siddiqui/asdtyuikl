@@ -1,8 +1,12 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  date,
   index,
   integer,
+  jsonb,
   pgTable,
+  real,
   text,
   timestamp,
   uniqueIndex,
@@ -174,6 +178,77 @@ export const specialRequirements = pgTable(
   ],
 );
 
+/**
+ * A confirmed, saved trip. Only created when the traveller clicks
+ * "Confirm itinerary" — drafts live in the browser, never here.
+ *
+ * `itinerary_json` holds the application-owned normalized itinerary (never
+ * raw AI text) that every screen and the PDF render from. `raw_itinerary_json`
+ * keeps the pre-normalization payload for auditing; it is never shown to a
+ * user. Every query against this table must be scoped to the session user.
+ */
+export const trips = pgTable(
+  "trips",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    fromLocation: text("from_location").notNull(),
+    toLocation: text("to_location").notNull(),
+    startDate: date("start_date", { mode: "string" }).notNull(),
+    endDate: date("end_date", { mode: "string" }).notNull(),
+    adults: integer("adults").notNull().default(1),
+    children: integer("children").notNull().default(0),
+    elderly: integer("elderly").notNull().default(0),
+    mobilitySupport: integer("mobility_support").notNull().default(0),
+    budget: integer("budget").notNull().default(0),
+    transportPreference: text("transport_preference").notNull().default(""),
+    priorities: jsonb("priorities")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    additionalPreferences: text("additional_preferences")
+      .notNull()
+      .default(""),
+    tripNeeds: jsonb("trip_needs")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    selectedOption: text("selected_option").notNull(),
+    status: text("status").notNull().default("confirmed"),
+    totalCost: integer("total_cost").notNull().default(0),
+    estimatedCo2: real("estimated_co2").notNull().default(0),
+    accessibilityScore: integer("accessibility_score").notNull().default(0),
+    sustainabilityScore: integer("sustainability_score").notNull().default(0),
+    /** "ai" | "prototype" — prototype plans are labelled in the UI. */
+    dataSource: text("data_source").notNull().default("prototype"),
+    engine: text("engine").notNull().default("prototype"),
+    itineraryJson: jsonb("itinerary_json").$type<unknown>().notNull(),
+    rawItineraryJson: jsonb("raw_itinerary_json").$type<unknown>().notNull(),
+    assumptions: jsonb("assumptions")
+      .$type<unknown>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    /** Server-derived snapshot of the accessibility profile at confirm time. */
+    profileSnapshot: jsonb("profile_snapshot")
+      .$type<unknown>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("trips_user_idx").on(table.userId),
+    index("trips_user_created_idx").on(table.userId, table.createdAt),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type AccessibilityProfile = typeof accessibilityProfiles.$inferSelect;
 export type TravelerType = typeof travelerTypes.$inferSelect;
@@ -182,3 +257,4 @@ export type AccessibilityRequirement =
 export type DietaryRequirement = typeof dietaryRequirements.$inferSelect;
 export type TravelPreference = typeof travelPreferences.$inferSelect;
 export type SpecialRequirement = typeof specialRequirements.$inferSelect;
+export type Trip = typeof trips.$inferSelect;
