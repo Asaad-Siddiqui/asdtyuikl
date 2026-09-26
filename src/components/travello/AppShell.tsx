@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Accessibility,
   ChevronDown,
-  Leaf,
   LogOut,
   Menu,
   Sparkles,
@@ -16,17 +15,34 @@ import {
 
 import { BottomNav } from "@/components/travello/BottomNav";
 import { useApp } from "@/components/travello/AppProvider";
-import { NAV_ITEMS, isNavActive } from "@/components/travello/nav";
+import { NAV_ITEMS, isNavActive, type NavItem } from "@/components/travello/nav";
 import { cn } from "@/lib/format";
 
 /**
  * The single application shell.
  *
  * One header, one navigation model, one mobile bar. The header is deliberately
- * a single row at every width: the nav strip never wraps (it scrolls if the
- * viewport is unusually narrow), and the account menu always exposes Profile,
- * the accessibility profile and Log out.
+ * one row at every width: five primary sections live in the centred pill rail,
+ * the quieter sections sit behind "More", and everything else is in the account
+ * menu. The rail never wraps, so the bar can never break into two lines.
  */
+
+/** The five sections that earn a permanent seat in the top rail. */
+const PRIMARY_HREFS = [
+  "/dashboard",
+  "/explore",
+  "/trips",
+  "/challenges",
+  "/impact",
+];
+
+const PRIMARY_ITEMS = NAV_ITEMS.filter((item) =>
+  PRIMARY_HREFS.includes(item.href),
+);
+const MORE_ITEMS = NAV_ITEMS.filter(
+  (item) => !PRIMARY_HREFS.includes(item.href),
+);
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-mesh">
@@ -39,62 +55,59 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Closes a popover on outside click or Escape. Shared by both menus. */
+function useDismiss(
+  open: boolean,
+  close: () => void,
+): React.RefObject<HTMLDivElement | null> {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) close();
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") close();
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, close]);
+
+  return ref;
+}
+
 function TravelloHeader() {
   const { user, stats } = useApp();
   const pathname = usePathname();
 
-  return (
-    <header className="sticky top-0 z-50 border-b border-sand-200/70 bg-white/85 shadow-2xs backdrop-blur-xl">
-      <div className="mx-auto flex h-[72px] max-w-[90rem] items-center gap-4 px-4 sm:px-6 lg:gap-6">
-        <Link
-          href="/dashboard"
-          className="group flex shrink-0 items-center gap-3"
-          aria-label="Travello dashboard"
-        >
-          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-forest-600 to-forest-800 shadow-md shadow-forest-700/25 transition-transform group-hover:scale-105">
-            <Leaf className="h-6 w-6 fill-current text-emerald-100" />
-          </span>
-          <span className="text-2xl font-black tracking-tight text-forest-950">
-            Travello
-          </span>
-        </Link>
+  const moreActive = MORE_ITEMS.some((item) => isNavActive(pathname, item.href));
 
-        {/* Nav strip — never wraps; scrolls only if the viewport demands it. */}
+  return (
+    <header className="glass sticky top-0 z-50 border-b border-sand-200/60 shadow-2xs backdrop-blur-xl">
+      <div className="mx-auto flex h-[76px] max-w-[90rem] items-center gap-3 px-4 sm:px-6 lg:gap-5">
+        <Brand />
+
         <nav
           aria-label="Main"
-          className="scrollbar-hide hidden min-w-0 flex-1 items-center gap-1.5 overflow-x-auto lg:flex"
+          className="mx-auto hidden items-center gap-1 rounded-2xl border border-sand-200/70 bg-white/70 p-1.5 shadow-2xs backdrop-blur-md lg:flex"
         >
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const active = isNavActive(pathname, item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2.5 text-[0.95rem] font-semibold whitespace-nowrap transition-all duration-200",
-                  active
-                    ? "bg-forest-700 text-white shadow-sm shadow-forest-800/25"
-                    : "text-sand-700 hover:bg-forest-50 hover:text-forest-800",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "h-[1.15rem] w-[1.15rem] shrink-0",
-                    active ? "text-emerald-300" : "text-sand-400",
-                  )}
-                />
-                {item.short}
-              </Link>
-            );
-          })}
+          {PRIMARY_ITEMS.map((item) => (
+            <NavPill key={item.href} item={item} pathname={pathname} />
+          ))}
+          <MoreMenu pathname={pathname} active={moreActive} />
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2.5 sm:gap-3">
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          <RoleBadge role={user.role} />
+
           <Link
             href="/plan"
-            className="hidden items-center gap-2 rounded-xl bg-forest-800 px-4 py-3 text-sm font-bold whitespace-nowrap text-white shadow-sm shadow-forest-900/20 transition-colors hover:bg-forest-900 sm:inline-flex"
+            className="hidden items-center gap-2 rounded-xl bg-forest-800 px-4 py-2.5 text-sm font-bold whitespace-nowrap text-white shadow-sm shadow-forest-900/20 transition-all duration-200 hover:-translate-y-px hover:bg-forest-900 active:translate-y-0 sm:inline-flex"
           >
             <Sparkles className="h-4 w-4 text-emerald-300" />
             Plan a Trip
@@ -114,6 +127,126 @@ function TravelloHeader() {
   );
 }
 
+function Brand() {
+  return (
+    <Link
+      href="/dashboard"
+      className="group flex shrink-0 items-center gap-3"
+      aria-label="Travello dashboard"
+    >
+      <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-forest-600 to-forest-800 shadow-md shadow-forest-700/25 transition-transform duration-200 group-hover:scale-105">
+        <span className="text-lg font-black tracking-tight text-white">T</span>
+      </span>
+      <span className="hidden flex-col sm:flex">
+        <span className="text-xl leading-none font-black tracking-tight text-forest-950 transition-colors group-hover:text-forest-700">
+          Travello
+        </span>
+        <span className="mt-1 text-[10px] leading-none font-bold tracking-wider text-forest-600 uppercase">
+          Green &amp; Inclusive
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+function RoleBadge({ role }: { role: string }) {
+  return (
+    <span className="hidden items-center gap-1.5 rounded-xl border border-forest-200/80 bg-forest-50 px-3 py-1.5 text-xs font-bold text-forest-800 shadow-2xs xl:flex">
+      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+      <span className="capitalize">
+        {role === "creator" ? "Creator" : "Traveller"} mode
+      </span>
+    </span>
+  );
+}
+
+const PILL_BASE =
+  "flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold whitespace-nowrap transition-all duration-200";
+const PILL_ACTIVE = "bg-forest-700 text-white shadow-sm shadow-forest-800/20";
+const PILL_IDLE = "text-sand-700 hover:bg-forest-50/80 hover:text-forest-800";
+
+function NavPill({
+  item,
+  pathname,
+}: {
+  item: NavItem;
+  pathname: string;
+}) {
+  const Icon = item.icon;
+  const active = isNavActive(pathname, item.href);
+
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={cn(PILL_BASE, active ? PILL_ACTIVE : PILL_IDLE)}
+    >
+      <Icon
+        className={cn("h-4 w-4 shrink-0", active ? "text-emerald-300" : "text-sand-400")}
+      />
+      {item.short}
+    </Link>
+  );
+}
+
+/** The quieter sections, kept one tap away so the rail stays short. */
+function MoreMenu({ pathname, active }: { pathname: string; active: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useDismiss(open, () => setOpen(false));
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className={cn(PILL_BASE, active ? PILL_ACTIVE : PILL_IDLE)}
+      >
+        More
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 transition-transform duration-200",
+            open && "rotate-180",
+            active ? "text-emerald-300" : "text-sand-400",
+          )}
+        />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label="More sections"
+          className="animate-slide-down absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-sand-200 bg-white p-1.5 shadow-xl"
+        >
+          {MORE_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const itemActive = isNavActive(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                aria-current={itemActive ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+                  itemActive
+                    ? "bg-forest-50 text-forest-800"
+                    : "text-sand-700 hover:bg-forest-50 hover:text-forest-800",
+                )}
+              >
+                <Icon className="h-4 w-4 text-sand-400" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AccountMenu({
   name,
   avatarUrl,
@@ -128,28 +261,7 @@ function AccountMenu({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(event: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false);
-      }
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  const ref = useDismiss(open, () => setOpen(false));
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -163,7 +275,7 @@ function AccountMenu({
   }
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -171,7 +283,7 @@ function AccountMenu({
         aria-haspopup="menu"
         aria-label="Account menu"
         className={cn(
-          "flex items-center gap-2.5 rounded-2xl border bg-white p-1 pr-2.5 transition-all sm:pr-3",
+          "flex items-center gap-2.5 rounded-2xl border bg-white p-1 pr-2.5 transition-all duration-200 sm:pr-3",
           open
             ? "border-forest-400 shadow-md shadow-forest-900/10"
             : "border-sand-200 hover:border-forest-300",
@@ -188,8 +300,8 @@ function AccountMenu({
           )}
         </span>
         <span className="hidden text-left md:block">
-          <span className="block text-[0.8rem] leading-tight font-bold text-forest-950">
-            {name}
+          <span className="block max-w-[9rem] truncate text-[0.8rem] leading-tight font-bold text-forest-950">
+            {name.split(" ")[0]}
           </span>
           <span className="block text-[0.7rem] font-bold text-emerald-700">
             {points.toLocaleString("en-IN")} pts
@@ -197,7 +309,7 @@ function AccountMenu({
         </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 shrink-0 text-sand-500 transition-transform",
+            "h-4 w-4 shrink-0 text-sand-500 transition-transform duration-200",
             open && "rotate-180",
           )}
         />
@@ -210,7 +322,7 @@ function AccountMenu({
           className="animate-slide-down absolute right-0 mt-2 w-64 overflow-hidden rounded-2xl border border-sand-200 bg-white shadow-xl"
         >
           <div className="border-b border-sand-100 bg-sand-50/70 px-4 py-3">
-            <p className="text-sm font-bold text-forest-950">{name}</p>
+            <p className="truncate text-sm font-bold text-forest-950">{name}</p>
             <p className="mt-0.5 text-xs font-semibold text-sand-600">
               {points.toLocaleString("en-IN")} impact points ·{" "}
               {role === "creator" ? "Creator" : "Traveller"}
@@ -218,7 +330,12 @@ function AccountMenu({
           </div>
 
           <div className="p-1.5">
-            <MenuLink href="/profile" icon={User} label="Your profile" onSelect={() => setOpen(false)} />
+            <MenuLink
+              href="/profile"
+              icon={User}
+              label="Your profile"
+              onSelect={() => setOpen(false)}
+            />
             <MenuLink
               href="/accessibility"
               icon={Accessibility}
@@ -307,9 +424,12 @@ function MobileMenu({ pathname }: { pathname: string }) {
       {open && (
         <div
           id="app-mobile-menu"
-          className="animate-slide-down fixed inset-x-0 top-[72px] z-40 border-t border-sand-200/70 bg-white shadow-xl lg:hidden"
+          className="animate-slide-down fixed inset-x-0 top-[76px] z-40 border-t border-sand-200/70 bg-white shadow-xl lg:hidden"
         >
-          <nav aria-label="All sections" className="mx-auto max-w-lg space-y-1.5 px-4 py-4">
+          <nav
+            aria-label="All sections"
+            className="mx-auto max-h-[calc(100dvh-76px)] max-w-lg space-y-1.5 overflow-y-auto px-4 py-4"
+          >
             <Link
               href="/plan"
               onClick={() => setOpen(false)}
@@ -327,6 +447,7 @@ function MobileMenu({ pathname }: { pathname: string }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-4 py-3 text-[0.95rem] font-semibold transition-colors",
                     active

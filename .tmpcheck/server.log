@@ -27,3 +27,57 @@
     at ignore-listed frames {
   digest: '1860014235'
 }
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[trip:plan] OpenRouter unavailable: unavailable no model in chain answered (google/gemma-4-26b-a4b-it:free, nvidia/nemotron-3-super-120b-a12b:free, nvidia/nemotron-3-ultra-550b-a55b:free, nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[trip:modify] OpenRouter unavailable: unavailable no model in chain answered (google/gemma-4-26b-a4b-it:free, nvidia/nemotron-3-super-120b-a12b:free, nvidia/nemotron-3-ultra-550b-a55b:free, nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[trip:plan] OpenRouter unavailable: unavailable no model in chain answered (google/gemma-4-26b-a4b-it:free, nvidia/nemotron-3-super-120b-a12b:free, nvidia/nemotron-3-ultra-550b-a55b:free, nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[trip:plan] OpenRouter unavailable: unavailable no model in chain answered (google/gemma-4-26b-a4b-it:free, nvidia/nemotron-3-super-120b-a12b:free, nvidia/nemotron-3-ultra-550b-a55b:free, nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[trip:plan] OpenRouter unavailable: unavailable no model in chain answered (google/gemma-4-26b-a4b-it:free, nvidia/nemotron-3-super-120b-a12b:free, nvidia/nemotron-3-ultra-550b-a55b:free, nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] google/gemma-4-26b-a4b-it:free failed: rate_limit google/gemma-4-26b-a4b-it:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-super-120b-a12b:free failed: rate_limit nvidia/nemotron-3-super-120b-a12b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-ultra-550b-a55b:free failed: rate_limit nvidia/nemotron-3-ultra-550b-a55b:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[openrouter] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free failed: rate_limit nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free 429
+[trip:plan] OpenRouter unavailable: unavailable no model in chain answered (google/gemma-4-26b-a4b-it:free, nvidia/nemotron-3-super-120b-a12b:free, nvidia/nemotron-3-ultra-550b-a55b:free, nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free)

@@ -162,7 +162,7 @@ export type AiOption = z.infer<typeof aiOptionSchema>;
 export function extractAiOptions(raw: unknown): AiOption[] {
   if (Array.isArray(raw)) {
     return raw
-      .slice(0, 2)
+      .slice(0, 4)
       .map((item) => aiOptionSchema.safeParse(item))
       .filter((result) => result.success)
       .map((result) => result.data);
@@ -174,7 +174,16 @@ export function extractAiOptions(raw: unknown): AiOption[] {
       record.options ?? record.itineraries ?? record.data ?? record.plans;
     if (Array.isArray(candidate)) return extractAiOptions(candidate);
     // Some models key options as { option_a: {...}, option_b: {...} }.
-    const keyed = ["option_a", "option_b", "optionA", "optionB"]
+    const keyed = [
+      "option_a",
+      "option_b",
+      "option_c",
+      "option_d",
+      "optionA",
+      "optionB",
+      "optionC",
+      "optionD",
+    ]
       .filter((key) => key in record)
       .map((key) => record[key]);
     if (keyed.length > 0) return extractAiOptions(keyed);
@@ -194,6 +203,20 @@ export type TransportMode =
   | "ev"
   | "walk"
   | "mixed";
+
+/**
+ * The planner always offers four itineraries. The traveller compares them on
+ * cost, accessibility, sustainability and time, while the environmental-impact
+ * band stays the constant axis they choose on.
+ */
+export const ITINERARY_OPTION_IDS = [
+  "option_a",
+  "option_b",
+  "option_c",
+  "option_d",
+] as const;
+
+export type OptionId = (typeof ITINERARY_OPTION_IDS)[number];
 
 export type TripRequestSummary = {
   from: string;
@@ -275,7 +298,7 @@ export type TripExperience = {
 };
 
 export type ItineraryOption = {
-  optionId: "option_a" | "option_b";
+  optionId: OptionId;
   title: string;
   tagline: string;
   description: string;
@@ -431,7 +454,12 @@ function addDays(isoDate: string, offset: number): string {
   return base.toISOString().slice(0, 10);
 }
 
-const DEFAULT_TITLES = ["Low-Impact & Accessible", "Comfort & Experience"];
+const DEFAULT_TITLES = [
+  "Low-Impact & Accessible",
+  "Comfort & Experience",
+  "Best Value",
+  "Experience-Rich",
+];
 
 const REST_DAY: TripActivity[] = [
   {
@@ -452,7 +480,7 @@ const REST_DAY: TripActivity[] = [
  */
 export function normalizeOption(
   raw: AiOption,
-  index: 0 | 1,
+  index: number,
   request: TripRequestSummary,
   dataSource: "ai" | "prototype",
 ): ItineraryOption {
@@ -572,12 +600,11 @@ export function normalizeOption(
 
   const totalCost = Math.round(transportCost + stay.totalCost + activityCost);
 
-  const optionId: "option_a" | "option_b" =
-    index === 0 ? "option_a" : "option_b";
+  const optionId: OptionId = ITINERARY_OPTION_IDS[index] ?? "option_d";
 
   return {
     optionId,
-    title: raw.title || DEFAULT_TITLES[index],
+    title: raw.title || DEFAULT_TITLES[index] || `Option ${index + 1}`,
     tagline: raw.tagline,
     description: raw.description,
     focus: raw.focus,
@@ -644,18 +671,29 @@ export function buildComparisons(
   for (const option of options) labels[option.optionId] = [];
   if (options.length < 2) return labels;
 
-  const [a, b] = options;
-
+  /** Awards a descriptive label to the single best option per dimension. */
   const winner = (
     pick: (option: ItineraryOption) => number,
     direction: "low" | "high",
     label: string,
   ) => {
-    const va = pick(a);
-    const vb = pick(b);
-    if (va === vb) return;
-    const aWins = direction === "low" ? va < vb : va > vb;
-    labels[(aWins ? a : b).optionId].push(label);
+    let best = options[0];
+    let bestValue = pick(best);
+    let ties = 1;
+    for (const option of options.slice(1)) {
+      const value = pick(option);
+      const better =
+        direction === "low" ? value < bestValue : value > bestValue;
+      if (better) {
+        best = option;
+        bestValue = value;
+        ties = 1;
+      } else if (value === bestValue) {
+        ties += 1;
+      }
+    }
+    // A tie means no single option can honestly claim the label.
+    if (ties === 1) labels[best.optionId].push(label);
   };
 
   winner((o) => o.summary.cost, "low", "Lower cost");
@@ -728,10 +766,92 @@ export type SavedTripView = {
   profileSnapshot: TripProfileView;
 };
 
-export const ITINERARY_OPTION_IDS = ["option_a", "option_b"] as const;
+export type EnvironmentalImpact = {
+  /** The constant axis the traveller chooses on. */
+  band: "Low" | "Moderate";
+  /** Full sentence used in cards and the PDF. */
+  label: string;
+  /** Per-traveller estimate, so a group size never inflates the band. */
+  perTravellerKg: number;
+};
 
-export function isOptionId(value: unknown): value is "option_a" | "option_b" {
-  return value === "option_a" || value === "option_b";
+/**
+ * The one axis every option is compared on: environmental impact.
+ *
+ * Bands are relative to the greenest plan in the set, so a long journey can
+ * never be mislabelled as low impact just because the route is short. The
+ * comparison is per traveller for the whole journey, so group size does not
+ * move an option between bands.
+ */
+export function environmentalImpact(
+  co2Kg: number,
+  travelers: number,
+  greenestCo2Kg?: number,
+): EnvironmentalImpact {
+  const perTravellerKg =
+    Math.round((co2Kg / Math.max(1, travelers)) * 10) / 10;
+  const greenest = greenestCo2Kg
+    ? greenestCo2Kg / Math.max(1, travelers)
+    : perTravellerKg;
+  const ratio = greenest > 0 ? perTravellerKg / greenest : 1;
+  const band: EnvironmentalImpact["band"] =
+    ratio <= 1.15 ? "Low" : "Moderate";
+  return {
+    band,
+    label: `${band} environmental impact`,
+    perTravellerKg,
+  };
+}
+
+/** The greenest estimated CO₂ among a set of options — the impact baseline. */
+export function greenestCo2(options: ItineraryOption[]): number {
+  return options.reduce(
+    (min, option) => Math.min(min, option.summary.co2Kg),
+    Number.POSITIVE_INFINITY,
+  );
+}
+
+export function isOptionId(value: unknown): value is OptionId {
+  return (
+    typeof value === "string" &&
+    (ITINERARY_OPTION_IDS as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Picks the single "recommended" itinerary from the four.
+ *
+ * Deterministic and explainable: accessibility and sustainability carry the
+ * most weight, then the lower estimated emissions and the lower cost. It is a
+ * recommendation, not a claim that the others are wrong.
+ */
+export function pickRecommended(
+  options: ItineraryOption[],
+): OptionId | null {
+  if (options.length === 0) return null;
+  const co2 = options.map((option) => option.summary.co2Kg);
+  const cost = options.map((option) => option.summary.cost);
+  const minCo2 = Math.min(...co2);
+  const maxCo2 = Math.max(...co2);
+  const minCost = Math.min(...cost);
+  const maxCost = Math.max(...cost);
+  const lowerIsBetter = (value: number, min: number, max: number) =>
+    max === min ? 1 : 1 - (value - min) / (max - min);
+
+  let best = options[0];
+  let bestScore = -Infinity;
+  for (const option of options) {
+    const score =
+      option.summary.sustainabilityScore * 0.32 +
+      option.summary.accessibilityScore * 0.3 +
+      lowerIsBetter(option.summary.co2Kg, minCo2, maxCo2) * 22 +
+      lowerIsBetter(option.summary.cost, minCost, maxCost) * 16;
+    if (score > bestScore) {
+      bestScore = score;
+      best = option;
+    }
+  }
+  return best.optionId;
 }
 
 /** Shared with pages that render a saved request back to the user. */

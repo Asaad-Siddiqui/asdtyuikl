@@ -200,7 +200,7 @@ export async function buildTripPdf(trip: FullTrip): Promise<Uint8Array> {
   const { itinerary, profileSnapshot, assumptions } = trip;
   const travelers = trip.adults + trip.children + trip.elderly;
 
-  writer.text("Wayfare", { size: 11, font: "bold", color: BRAND, gap: 2 });
+  writer.text("Travello", { size: 11, font: "bold", color: BRAND, gap: 2 });
   writer.text("Accessible, lower-impact trip plan", {
     size: 9.5,
     color: MUTED,
@@ -325,28 +325,14 @@ export async function buildTripPdf(trip: FullTrip): Promise<Uint8Array> {
       if (activity.location) details.push(activity.location);
       if (activity.transport) details.push(`via ${activity.transport}`);
       if (activity.cost > 0) details.push(`estimated ${money(activity.cost)}`);
-      if (activity.co2Kg > 0) details.push(`~${activity.co2Kg} kg CO2`);
+      if (activity.accessibility) {
+        details.push(`access: ${activity.accessibility}`);
+      }
       if (details.length > 0) {
         writer.text(details.join("  |  "), {
           size: 9.5,
           color: MUTED,
-          gap: 2,
-          indent: 18,
-        });
-      }
-      if (activity.accessibility) {
-        writer.text(`Accessibility: ${activity.accessibility}`, {
-          size: 9.5,
-          color: MUTED,
-          gap: 2,
-          indent: 18,
-        });
-      }
-      if (activity.sustainability) {
-        writer.text(`Sustainability: ${activity.sustainability}`, {
-          size: 9.5,
-          color: MUTED,
-          gap: 4,
+          gap: 3,
           indent: 18,
         });
       }
@@ -354,7 +340,7 @@ export async function buildTripPdf(trip: FullTrip): Promise<Uint8Array> {
   }
 
   /* Requirements from the stored profile --------------------------- */
-  writer.heading("Accessibility requirements considered");
+  writer.heading("Accessibility and dietary requirements considered");
   const requirementLines: string[] = [];
   if (profileSnapshot.travelerTypes?.length) {
     requirementLines.push(
@@ -397,17 +383,16 @@ export async function buildTripPdf(trip: FullTrip): Promise<Uint8Array> {
     writer.text(`- ${line}`, { size: 10, indent: 6, gap: 3 });
   }
 
-  writer.heading("Dietary requirements considered");
   writer.text(
     profileSnapshot.dietary?.length
-      ? profileSnapshot.dietary
+      ? `Dietary: ${profileSnapshot.dietary
           .map((value) => DIETARY_LABELS[value] ?? value)
-          .join(", ")
-      : "None recorded.",
-    { size: 10, gap: 4 },
+          .join(", ")}`
+      : "Dietary: none recorded.",
+    { size: 10, gap: 3 },
   );
   if (profileSnapshot.dietaryDetail) {
-    writer.text(profileSnapshot.dietaryDetail, { size: 10, gap: 4, color: MUTED });
+    writer.text(profileSnapshot.dietaryDetail, { size: 10, gap: 3, color: MUTED });
   }
 
   if (trip.priorities.length > 0) {
@@ -422,7 +407,7 @@ export async function buildTripPdf(trip: FullTrip): Promise<Uint8Array> {
   /* Assumptions + disclaimers -------------------------------------- */
   writer.heading("How estimates were calculated");
   writer.text(
-    "Estimated CO2 = distance x estimated transport emission factor x traveller count.",
+    "Estimated CO2 = distance x estimated transport emission factor x traveller count. Accessibility and sustainability scores are prototype estimates.",
     { size: 10, gap: 3 },
   );
   for (const assumption of assumptions) {
@@ -432,20 +417,16 @@ export async function buildTripPdf(trip: FullTrip): Promise<Uint8Array> {
       gap: 3,
     });
   }
-  writer.text(
-    "Accessibility and sustainability scores are prototype estimates based on the information available to us.",
-    { size: 10, gap: 3 },
-  );
 
-  writer.moveDown(6);
+  writer.moveDown(4);
   writer.rule();
   writer.text(
-    "Prototype data notice: this plan is generated for a prototype/demo. Costs, CO2, accessibility and sustainability figures are estimates produced from our own prototype dataset, not verified real-world measurements. Facilities such as lifts, step-free access, certifications and opening hours are suggestions that must be confirmed directly with the provider before booking.",
+    "Prototype data notice: figures are estimates from Travello's prototype dataset, not verified measurements. Facilities, certifications and opening hours must be confirmed with each provider before booking.",
     { size: 9, color: MUTED, gap: 3 },
   );
   if (trip.dataSource === "prototype") {
     writer.text(
-      "This particular plan was produced by Wayfare's own planning engine because our AI assistant was unavailable.",
+      "Produced by Travello's own planning engine because our AI assistant was unavailable.",
       { size: 9, color: MUTED, gap: 3 },
     );
   }

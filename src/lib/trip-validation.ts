@@ -10,7 +10,11 @@ import {
   PRIORITY_SLUGS,
   TRANSPORT_SLUGS,
 } from "@/lib/trip-options";
-import { summarizeRequest, type TripRequestSummary } from "@/lib/trip-schema";
+import {
+  ITINERARY_OPTION_IDS,
+  summarizeRequest,
+  type TripRequestSummary,
+} from "@/lib/trip-schema";
 
 /** Never send uncontrolled frontend data into the AI — validate it here first. */
 
@@ -160,7 +164,7 @@ const storedDaySchema = z.object({
 });
 
 const storedOptionSchema = z.object({
-  optionId: z.enum(["option_a", "option_b"]),
+  optionId: z.enum(ITINERARY_OPTION_IDS),
   title: boundedString(120),
   tagline: boundedString(200),
   description: boundedString(900),

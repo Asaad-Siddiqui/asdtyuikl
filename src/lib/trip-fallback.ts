@@ -5,7 +5,6 @@ import {
   CHILD_NEED_LABELS,
   ELDERLY_PRIORITY_LABELS,
   MOBILITY_NEED_LABELS,
-  TRANSPORT_LABELS,
 } from "@/lib/trip-options";
 import type { AiOption, TripRequestSummary } from "@/lib/trip-schema";
 import type { TripProfileSnapshot } from "@/lib/trip-service";
@@ -19,7 +18,10 @@ import type { TripProfileSnapshot } from "@/lib/trip-service";
  * the UI and is never presented as verified real-world information.
  *
  * It emits the same shape the AI is asked for, so it flows through the exact
- * same validation + normalization pipeline and the same UI.
+ * same validation + normalization pipeline and the same UI. It always produces
+ * FOUR options, and every one of them stays in the Low or Moderate
+ * environmental-impact band — that is the constant axis the traveller chooses
+ * on.
  */
 
 function anchorFor(destination: string) {
@@ -33,26 +35,31 @@ function anchorFor(destination: string) {
 }
 
 /**
- * Which transport mode each option uses. Option A always aims for the lower
- * estimated emissions; Option B optimises for comfort while staying accessible.
+ * Transport per option. Every pairing deliberately avoids the higher-emission
+ * modes so the four plans stay comparable on environmental impact.
  */
-function pickModes(preference: string): { a: string; b: string } {
+function pickModes(preference: string): {
+  a: string;
+  b: string;
+  c: string;
+  d: string;
+} {
   switch (preference) {
     case "public_transport":
-      return { a: "train", b: "car" };
+      return { a: "train", b: "ev", c: "bus", d: "mixed" };
     case "bus":
-      return { a: "bus", b: "car" };
+      return { a: "bus", b: "ev", c: "train", d: "mixed" };
     case "private_vehicle":
-      return { a: "mixed", b: "car" };
+      return { a: "ev", b: "mixed", c: "bus", d: "train" };
     case "ev_shared":
-      return { a: "ev", b: "ev" };
+      return { a: "ev", b: "mixed", c: "bus", d: "train" };
     case "walking":
-      return { a: "walk", b: "mixed" };
+      return { a: "walk", b: "mixed", c: "bus", d: "train" };
     case "lowest_impact":
-      return { a: "train", b: "ev" };
+      return { a: "train", b: "ev", c: "bus", d: "mixed" };
     case "surprise":
     default:
-      return { a: "train", b: "car" };
+      return { a: "train", b: "ev", c: "bus", d: "mixed" };
   }
 }
 
@@ -69,7 +76,10 @@ function accessibilityLine(snapshot: TripProfileSnapshot): string {
   const parts: string[] = [];
   if (snapshot.mobility.length > 0) parts.push("step-free route planned");
   if (snapshot.mobility.includes("elevator")) parts.push("lift available");
-  if (snapshot.mobility.includes("seating_areas") || snapshot.mobility.includes("minimal_walking")) {
+  if (
+    snapshot.mobility.includes("seating_areas") ||
+    snapshot.mobility.includes("minimal_walking")
+  ) {
     parts.push("frequent seating");
   }
   if (snapshot.travelerTypes.includes("wheelchair_user")) {
@@ -79,11 +89,218 @@ function accessibilityLine(snapshot: TripProfileSnapshot): string {
   return parts.join("; ");
 }
 
-function comfortLine(variant: "a" | "b"): string {
-  return variant === "a"
-    ? "Slower but lower-impact where the route allows."
-    : "Fewer transfers and a more relaxed pace.";
-}
+type Archetype = {
+  key: string;
+  optionId: string;
+  title: string;
+  tagline: string;
+  focus: string[];
+  highlights: string[];
+  /** Share of the budget spent on the stay each night. */
+  stayShare: number;
+  /** Accessibility delta applied to the destination's base score. */
+  accDelta: number;
+  /** Sustainability delta applied to the destination's base score. */
+  susDelta: number;
+  stayName: (to: string) => string;
+  stayType: string;
+  stayFeatures: string[];
+  experiences: { title: string; description: string; impact: string; share: number }[];
+  transportNote: string;
+};
+
+const ARCHETYPES: Archetype[] = [
+  {
+    key: "greenest",
+    optionId: "option_a",
+    title: "Greenest & Accessible",
+    tagline: "The lowest estimated CO₂ we could find for your route",
+    focus: ["Lowest estimated CO₂", "Strong accessibility", "Lower-impact stay"],
+    highlights: [
+      "Lowest-emission travel the route allows",
+      "Step-free viewpoints and a gentle pace",
+      "Locally-run, lower-impact accommodation",
+    ],
+    stayShare: 0.26,
+    accDelta: 0,
+    susDelta: 8,
+    stayName: (to) => `${to} Green Stay`,
+    stayType: "Prototype lower-impact stay",
+    stayFeatures: [
+      "Prototype: step-free access",
+      "Prototype: solar water",
+      "Prototype: local sourcing",
+    ],
+    experiences: [
+      {
+        title: "Accessible viewpoint",
+        description: "A shorter route to a level lookout with seating.",
+        impact: "Lower impact",
+        share: 0.01,
+      },
+      {
+        title: "Locally-sourced meal",
+        description: "A small, quieter restaurant with a written menu.",
+        impact: "Lower impact",
+        share: 0.015,
+      },
+      {
+        title: "Market and garden visit",
+        description: "A flat, shaded walk close to your stay.",
+        impact: "Lower impact",
+        share: 0.01,
+      },
+    ],
+    transportNote: "Slower but lower-impact where the route allows.",
+  },
+  {
+    key: "comfort",
+    optionId: "option_b",
+    title: "Comfort First",
+    tagline: "Fewer transfers and the most comfortable stay",
+    focus: ["Most comfortable", "Highest accessibility", "Fewer transfers"],
+    highlights: [
+      "Door-to-door comfort with fewer changes",
+      "Quiet, accessible rooms and lifts",
+      "Unhurried days with plenty of pauses",
+    ],
+    stayShare: 0.44,
+    accDelta: 5,
+    susDelta: 2,
+    stayName: (to) => `${to} Comfort Retreat`,
+    stayType: "Prototype comfortable stay",
+    stayFeatures: [
+      "Prototype: step-free access",
+      "Prototype: lift",
+      "Prototype: quiet rooms",
+    ],
+    experiences: [
+      {
+        title: "Guided heritage walk (short)",
+        description: "An easy, mostly level route with plenty of stops.",
+        impact: "Moderate impact",
+        share: 0.02,
+      },
+      {
+        title: "Scenic lift or cable car",
+        description: "Big views with very little walking.",
+        impact: "Moderate impact",
+        share: 0.025,
+      },
+      {
+        title: "Signature local dinner",
+        description: "A comfortable restaurant with staff assistance.",
+        impact: "Moderate impact",
+        share: 0.03,
+      },
+      {
+        title: "Relaxed spa or café afternoon",
+        description: "Unhurried time with accessible facilities.",
+        impact: "Moderate impact",
+        share: 0.015,
+      },
+    ],
+    transportNote: "Fewer transfers and a much more relaxed pace.",
+  },
+  {
+    key: "value",
+    optionId: "option_c",
+    title: "Best Value",
+    tagline: "The lowest estimated cost, without losing accessibility",
+    focus: ["Lowest estimated cost", "Strong accessibility", "Good value stay"],
+    highlights: [
+      "Public transport keeps the fare down",
+      "Solid accessibility at every stop",
+      "Good-value, locally-run accommodation",
+    ],
+    stayShare: 0.18,
+    accDelta: 2,
+    susDelta: 0,
+    stayName: (to) => `${to} Value Guesthouse`,
+    stayType: "Prototype good-value stay",
+    stayFeatures: [
+      "Prototype: step-free entry",
+      "Prototype: family-run",
+      "Prototype: near transport",
+    ],
+    experiences: [
+      {
+        title: "Free walking route",
+        description: "A flat, self-guided loop from your stay.",
+        impact: "Lower impact",
+        share: 0.005,
+      },
+      {
+        title: "Local market browse",
+        description: "Shaded lanes with plenty of places to sit.",
+        impact: "Lower impact",
+        share: 0.008,
+      },
+      {
+        title: "Simple local thali",
+        description: "An easy, well-priced meal with a written menu.",
+        impact: "Lower impact",
+        share: 0.01,
+      },
+    ],
+    transportNote: "Public transport keeps the cost down; slightly more changes.",
+  },
+  {
+    key: "experiences",
+    optionId: "option_d",
+    title: "Experience-Rich",
+    tagline: "More to see and do, still lower-impact",
+    focus: ["Most experiences", "Strong accessibility", "Lively pace"],
+    highlights: [
+      "The fullest set of experiences",
+      "Still accessible and step-free",
+      "Locally-run activities, lower waste",
+    ],
+    stayShare: 0.32,
+    accDelta: 3,
+    susDelta: -2,
+    stayName: (to) => `${to} Trailside Lodge`,
+    stayType: "Prototype experience-led stay",
+    stayFeatures: [
+      "Prototype: step-free access",
+      "Prototype: activity desk",
+      "Prototype: quiet rooms",
+    ],
+    experiences: [
+      {
+        title: "Guided nature trail (short)",
+        description: "Mostly level, with rest points along the way.",
+        impact: "Lower impact",
+        share: 0.02,
+      },
+      {
+        title: "Local craft workshop",
+        description: "A hands-on session with step-free access.",
+        impact: "Lower impact",
+        share: 0.03,
+      },
+      {
+        title: "Sunset viewpoint ride",
+        description: "A short, accessible transfer to a level lookout.",
+        impact: "Moderate impact",
+        share: 0.025,
+      },
+      {
+        title: "Tasting menu evening",
+        description: "A local menu with dietary options on request.",
+        impact: "Moderate impact",
+        share: 0.035,
+      },
+      {
+        title: "Heritage quarter stroll",
+        description: "Plenty of seating and accessible washrooms.",
+        impact: "Lower impact",
+        share: 0.02,
+      },
+    ],
+    transportNote: "A mix of modes to fit in more, kept within lower impact.",
+  },
+];
 
 export function buildPrototypeOptions(
   request: TripRequestSummary,
@@ -116,141 +333,89 @@ export function buildPrototypeOptions(
       ? ` Kept front of mind: ${tripNeeds.slice(0, 4).join(", ")}.`
       : "";
 
-  const stayPerNight = (
-    share: number,
-  ): number => Math.max(600, Math.round((request.budget * share) / request.nights / 50) * 50);
+  const stayPerNight = (share: number): number =>
+    Math.max(600, Math.round((request.budget * share) / request.nights / 50) * 50);
 
-  const options: AiOption[] = [
-    {
-      optionId: "option_a",
-      title: "Low-Impact & Accessible",
-      tagline: "Lower estimated emissions, practical travel time",
+  const clamp = (value: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, Math.round(value)));
+
+  return ARCHETYPES.map((archetype) => {
+    const mode = modes[archetype.key[0] as "a" | "b" | "c" | "d"];
+    const accessScore = clamp(
+      baseAccessibility + archetype.accDelta + mobilityScore,
+      55,
+      98,
+    );
+    const sustainScore = clamp(
+      baseSustainability + archetype.susDelta,
+      55,
+      98,
+    );
+
+    return {
+      optionId: archetype.optionId,
+      title: archetype.title,
+      tagline: archetype.tagline,
       description:
-        `A calm ${request.days}-day plan from ${request.from} to ${request.to} built around lower-impact travel and step-free stops.${needSentence}${preferenceNote}`,
-      focus: ["Lower estimated CO₂", "Strong accessibility", "Lower-impact stay"],
-      highlights: [
-        "Lower-emission travel where the route allows",
-        "Step-free viewpoints and gentle pacing",
-        "Locally-run, lower-impact accommodation",
-      ],
+        `A ${request.days}-day ${archetype.title.toLowerCase()} plan from ${request.from} to ${request.to}, built around lower-impact travel and step-free stops.${needSentence}${preferenceNote}`,
+      focus: archetype.focus,
+      highlights: archetype.highlights,
       safetyNotes: needNote,
       transport: {
-        mode: modes.a,
-        label: TRANSPORT_LABELS[request.transportPreference] ?? modes.a,
-        notes: comfortLine("a"),
+        mode,
+        // Labelled by the mode we actually chose, so four plans that use
+        // different travel never all read as the traveller's first preference.
+        label: MODE_ACTIVITY[mode] ?? mode,
+        notes: archetype.transportNote,
         cost: 0,
       },
       stay: {
-        name: `${request.to} Green Stay`,
-        type: "Prototype lower-impact stay",
-        costPerNight: stayPerNight(0.28),
-        accessibilityScore: Math.max(55, Math.min(97, baseAccessibility + mobilityScore)),
-        sustainabilityScore: Math.min(97, baseSustainability + 6),
-        features: ["Prototype: step-free access", "Prototype: solar water", "Prototype: local sourcing"],
-        notes: "Prototype planning attributes — confirm with the property before booking.",
+        name: archetype.stayName(request.to),
+        type: archetype.stayType,
+        costPerNight: stayPerNight(archetype.stayShare),
+        accessibilityScore: accessScore,
+        sustainabilityScore: sustainScore,
+        features: archetype.stayFeatures,
+        notes:
+          "Prototype planning attributes — confirm with the property before booking.",
       },
-      experiences: [
-        {
-          title: "Accessible viewpoint",
-          description: "A shorter route to a level lookout with seating.",
-          accessibilityScore: Math.max(55, Math.min(97, baseAccessibility + 2)),
-          sustainabilityLabel: "Lower impact",
-          cost: Math.round(request.budget * 0.01),
-        },
-        {
-          title: "Locally-sourced meal",
-          description: "A small, quieter restaurant with a written menu.",
-          accessibilityScore: Math.max(55, Math.min(97, baseAccessibility)),
-          sustainabilityLabel: "Lower impact",
-          cost: Math.round(request.budget * 0.015),
-        },
-        {
-          title: "Market & garden visit",
-          description: "A flat, shaded walk close to your stay.",
-          accessibilityScore: Math.max(55, Math.min(97, baseAccessibility)),
-          sustainabilityLabel: "Lower impact",
-          cost: Math.round(request.budget * 0.01),
-        },
-      ],
-      accessibilityScore: Math.max(55, Math.min(97, baseAccessibility + mobilityScore)),
-      sustainabilityScore: Math.min(97, baseSustainability + 6),
-      days: buildDays(request, modes.a, needNote, "a"),
-    },
-    {
-      optionId: "option_b",
-      title: "Comfort & Experience",
-      tagline: "More comfort and more to do, reasonable impact",
-      description:
-        `A more comfortable ${request.days}-day plan from ${request.from} to ${request.to} with fewer transfers and more experiences.${needSentence}${preferenceNote}`,
-      focus: ["More comfort", "Strong accessibility", "More experiences"],
-      highlights: [
-        "Fewer transfers and door-to-door comfort",
-        "Extra experiences and dining",
-        "Comfortable, accessible accommodation",
-      ],
-      safetyNotes: needNote,
-      transport: {
-        mode: modes.b,
-        label: `${TRANSPORT_LABELS[request.transportPreference] ?? modes.b} (comfort)`,
-        notes: comfortLine("b"),
-        cost: 0,
-      },
-      stay: {
-        name: `${request.to} Comfort Retreat`,
-        type: "Prototype comfortable stay",
-        costPerNight: stayPerNight(0.38),
-        accessibilityScore: Math.max(58, Math.min(98, baseAccessibility + 4 + mobilityScore)),
-        sustainabilityScore: Math.min(95, baseSustainability - 6),
-        features: ["Prototype: step-free access", "Prototype: lift", "Prototype: quiet rooms"],
-        notes: "Prototype planning attributes — confirm with the property before booking.",
-      },
-      experiences: [
-        {
-          title: "Guided heritage walk (short)",
-          description: "An easy, mostly level route with plenty of stops.",
-          accessibilityScore: Math.max(58, Math.min(98, baseAccessibility + 4)),
-          sustainabilityLabel: "Moderate impact",
-          cost: Math.round(request.budget * 0.02),
-        },
-        {
-          title: "Scenic cable-car or lift ride",
-          description: "Big views with very little walking.",
-          accessibilityScore: Math.max(58, Math.min(98, baseAccessibility + 6)),
-          sustainabilityLabel: "Moderate impact",
-          cost: Math.round(request.budget * 0.03),
-        },
-        {
-          title: "Signature local dinner",
-          description: "A comfortable restaurant with staff assistance.",
-          accessibilityScore: Math.max(58, Math.min(98, baseAccessibility + 2)),
-          sustainabilityLabel: "Moderate impact",
-          cost: Math.round(request.budget * 0.035),
-        },
-        {
-          title: "Relaxed spa or café afternoon",
-          description: "Unhurried time with accessible facilities.",
-          accessibilityScore: Math.max(58, Math.min(98, baseAccessibility + 4)),
-          sustainabilityLabel: "Moderate impact",
-          cost: Math.round(request.budget * 0.02),
-        },
-      ],
-      accessibilityScore: Math.max(58, Math.min(98, baseAccessibility + 4 + mobilityScore)),
-      sustainabilityScore: Math.min(95, baseSustainability - 6),
-      days: buildDays(request, modes.b, needNote, "b"),
-    },
-  ];
-
-  return options;
+      experiences: archetype.experiences.map((experience) => ({
+        title: experience.title,
+        description: experience.description,
+        accessibilityScore: clamp(accessScore + 2, 55, 98),
+        sustainabilityLabel: experience.impact,
+        cost: Math.round(request.budget * experience.share),
+      })),
+      accessibilityScore: accessScore,
+      sustainabilityScore: sustainScore,
+      days: buildDays(request, mode, needNote, archetype.key),
+    } satisfies AiOption;
+  });
 }
+
+type DayKey = string;
 
 function buildDays(
   request: TripRequestSummary,
   mode: string,
   needNote: string,
-  variant: "a" | "b",
+  variant: DayKey,
 ): AiOption["days"] {
   const total = request.days;
+  const lively = variant === "experiences";
+  const gentle = variant === "greenest" || variant === "value";
   const days: AiOption["days"] = [];
+
+  const midDayTitle = gentle
+    ? "Nature and gentle exploring"
+    : lively
+      ? "Experiences and local life"
+      : "Comfort and easy exploring";
+  const midDaySummary = gentle
+    ? "A low-impact day with shaded stops and time to rest."
+    : lively
+      ? "A fuller day of experiences with comfortable pauses built in."
+      : "An unhurried day with fewer transfers and plenty of rest.";
 
   for (let index = 0; index < total; index += 1) {
     const isFirst = index === 0;
@@ -264,7 +429,7 @@ function buildDays(
         activities: [
           {
             time: "08:00",
-            title: `${MODE_ACTIVITY[mode]} to ${request.to}`,
+            title: `${MODE_ACTIVITY[mode] ?? "Journey"} to ${request.to}`,
             location: `${request.from} → ${request.to}`,
             transport: mode,
             cost: 0,
@@ -284,7 +449,7 @@ function buildDays(
           },
           {
             time: "15:30",
-            title: variant === "a" ? "Easy viewpoint visit" : "Short orientation stroll",
+            title: gentle ? "Easy viewpoint visit" : "Short orientation stroll",
             location: request.to,
             transport: mode,
             cost: Math.round(request.budget * 0.01),
@@ -311,7 +476,8 @@ function buildDays(
       days.push({
         day: index + 1,
         title: "Last morning and journey home",
-        summary: "A gentle final morning, then the return journey with plenty of buffer time.",
+        summary:
+          "A gentle final morning, then the return journey with plenty of buffer time.",
         activities: [
           {
             time: "09:00",
@@ -335,7 +501,7 @@ function buildDays(
           },
           {
             time: "12:30",
-            title: `${MODE_ACTIVITY[mode]} back to ${request.from}`,
+            title: `${MODE_ACTIVITY[mode] ?? "Journey"} back to ${request.from}`,
             location: `${request.to} → ${request.from}`,
             transport: mode,
             cost: 0,
@@ -350,18 +516,15 @@ function buildDays(
 
     days.push({
       day: index + 1,
-      title: variant === "a" ? "Nature and gentle exploring" : "Experiences and comfort",
-      summary:
-        variant === "a"
-          ? "A low-impact day with shaded stops and time to rest."
-          : "A fuller day of experiences with comfortable pauses built in.",
+      title: midDayTitle,
+      summary: midDaySummary,
       activities: [
         {
           time: "09:00",
-          title: variant === "a" ? "Guided nature walk (short)" : "Guided heritage walk",
+          title: lively ? "Guided local trail" : "Guided nature walk (short)",
           location: request.to,
           transport: "",
-          cost: Math.round(request.budget * 0.02),
+          cost: Math.round(request.budget * (lively ? 0.025 : 0.02)),
           accessibility: "Mostly level, with rest points.",
           sustainability: "Small-group activity.",
           co2Kg: 0,
@@ -378,9 +541,9 @@ function buildDays(
         },
         {
           time: "14:00",
-          title: variant === "a" ? "Accessible viewpoint" : "Scenic lift / cable car",
+          title: gentle ? "Accessible viewpoint" : "Scenic lift or cable car",
           location: request.to,
-          transport: variant === "a" ? "Walk" : mode,
+          transport: gentle ? "Walk" : mode,
           cost: Math.round(request.budget * 0.03),
           accessibility: needNote,
           sustainability: "Lower-emission option where possible.",

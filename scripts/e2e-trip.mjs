@@ -204,10 +204,11 @@ step(
 );
 await planningStarted;
 
-step("two-option comparison screen appears", await waitForText("Two options, built for you", 180000));
+step("four-option comparison screen appears", await waitForText("Four options, built for you", 180000));
 await waitForText("Option A", 60000);
-step("Option A is shown", await waitForText("Option A"));
-step("Option B is shown", await waitForText("Option B"));
+for (const letter of ["A", "B", "C", "D"]) {
+  step(`Option ${letter} is shown`, await waitForText(`Option ${letter}`));
+}
 step("estimated CO₂ is labelled as an estimate", await waitForText("Estimated CO₂"));
 
 const optionsBody = await page.locator("body").innerText();
@@ -224,22 +225,42 @@ step(
     (label) => optionsBody.includes(label),
   ),
 );
+const flatOptions = optionsBody.replace(/\s+/g, " ");
 step(
-  "the comparison explicitly avoids labelling one option 'best'",
-  optionsBody.includes("Neither option is labelled"),
+  "environmental impact is the constant axis for all four plans",
+  /low or moderate environmental impact/i.test(flatOptions) &&
+    /Low environmental impact/i.test(flatOptions),
 );
 step(
-  "no option badge claims to be the best",
-  !/\bBest (option|choice|plan|trip)\b/i.test(optionsBody),
+  "exactly one plan is marked recommended",
+  (optionsBody.match(/Recommended/g) ?? []).length === 1,
+  String((optionsBody.match(/Recommended/g) ?? []).length),
 );
 step("raw AI JSON is never rendered", !optionsBody.includes("```") && !optionsBody.includes("optionId"));
 step("OpenRouter is never called from the browser", externalRequests.length === 0, externalRequests.join(","));
 
 /* ---------------------------------------------------------------- */
-/* Detailed itinerary                                                */
+/* Comfort & experience (charts)                                     */
 /* ---------------------------------------------------------------- */
 
 await page.getByRole("button", { name: /Choose this plan/i }).first().click();
+step("comfort & experience page opens", await waitForText("Comfort & experience", 30000));
+step(
+  "the whole-journey CO₂ graph is shown",
+  await waitForText("Estimated CO₂ for the whole journey"),
+);
+step(
+  "the four-option comparison graph is shown",
+  await waitForText("How your four options compare"),
+);
+const chartCount = await page.locator("svg.recharts-surface").count();
+step("two charts are rendered", chartCount >= 2, `count=${chartCount}`);
+
+/* ---------------------------------------------------------------- */
+/* Detailed itinerary                                                */
+/* ---------------------------------------------------------------- */
+
+await page.getByRole("button", { name: /Continue to the full itinerary/i }).click();
 step("detailed itinerary opens", await waitForText("Your day-by-day itinerary", 30000));
 const detailBody = await page.locator("body").innerText();
 step("timeline shows Day 1", detailBody.includes("Day 1"));

@@ -3,7 +3,13 @@
 import Icon from "@/components/Icon";
 import type { IconName } from "@/lib/icons";
 import { formatCo2, formatINR } from "@/lib/trip-options";
-import type { ItineraryOption, TransportMode } from "@/lib/trip-schema";
+import {
+  ITINERARY_OPTION_IDS,
+  type EnvironmentalImpact,
+  type ItineraryOption,
+  type TransportMode,
+} from "@/lib/trip-schema";
+import { cn } from "@/lib/format";
 
 const MODE_ICONS: Record<TransportMode, IconName> = {
   train: "train",
@@ -14,49 +20,78 @@ const MODE_ICONS: Record<TransportMode, IconName> = {
   mixed: "compass",
 };
 
+const LETTERS = ["A", "B", "C", "D"];
+
+const IMPACT_TONE: Record<EnvironmentalImpact["band"], string> = {
+  Low: "border-forest-200 bg-forest-50 text-forest-800",
+  Moderate: "border-amber-200 bg-amber-50 text-amber-800",
+};
+
 export default function TripOptionCard({
   option,
   labels,
   onSelect,
+  impact,
+  recommended = false,
   ctaLabel = "Choose this plan",
   selected = false,
 }: {
   option: ItineraryOption;
   labels: string[];
   onSelect: () => void;
+  impact: EnvironmentalImpact;
+  recommended?: boolean;
   ctaLabel?: string;
   selected?: boolean;
 }) {
+  const letter = LETTERS[ITINERARY_OPTION_IDS.indexOf(option.optionId)] ?? "A";
+
   return (
     <article
-      className={
-        selected
-          ? "card flex flex-col border-brand-400 p-5 ring-1 ring-brand-300 sm:p-6"
-          : "card flex flex-col p-5 sm:p-6"
-      }
+      className={cn(
+        "card flex flex-col p-5 sm:p-6",
+        selected && "border-forest-400 ring-1 ring-forest-300",
+        !selected && recommended && "border-forest-300 ring-1 ring-forest-200",
+      )}
       aria-label={`${option.title} itinerary option`}
     >
       <header>
-        <p className="text-[11px] font-semibold tracking-wide text-ink-400 uppercase">
-          {option.optionId === "option_a" ? "Option A" : "Option B"}
-        </p>
-        <h3 className="mt-1 text-lg font-semibold">{option.title}</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-[11px] font-bold tracking-wide text-sand-500 uppercase">
+            Option {letter}
+          </p>
+          {recommended && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-forest-700 px-2.5 py-1 text-[11px] font-bold text-white">
+              <Icon name="sparkles" className="h-3 w-3 text-emerald-300" />
+              Recommended
+            </span>
+          )}
+        </div>
+
+        <h3 className="mt-1.5 text-lg font-semibold">{option.title}</h3>
         {option.tagline && (
           <p className="mt-1 text-sm text-ink-500">{option.tagline}</p>
         )}
 
-        {labels.length > 0 && (
-          <ul className="mt-3 flex flex-wrap gap-1.5">
-            {labels.map((label) => (
-              <li
-                key={label}
-                className="rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700"
-              >
-                {label}
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold",
+              IMPACT_TONE[impact.band],
+            )}
+          >
+            <Icon name="leaf" className="h-3.5 w-3.5" />
+            {impact.label}
+          </span>
+          {labels.map((label) => (
+            <span
+              key={label}
+              className="rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700"
+            >
+              {label}
+            </span>
+          ))}
+        </div>
       </header>
 
       <p className="mt-4 text-sm leading-relaxed text-ink-600">
@@ -159,7 +194,7 @@ export default function TripOptionCard({
         <button
           type="button"
           onClick={onSelect}
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 text-sm font-medium text-white transition-colors hover:bg-brand-700 focus-visible:outline-offset-2"
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 text-sm font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-brand-700 focus-visible:outline-offset-2 active:translate-y-0"
         >
           {ctaLabel}
           <Icon name="arrowRight" className="h-4.5 w-4.5" />

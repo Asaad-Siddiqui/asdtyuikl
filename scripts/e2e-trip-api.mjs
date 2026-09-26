@@ -178,11 +178,21 @@ console.log(`   plan took ${((Date.now() - planStart) / 1000).toFixed(1)}s\n`);
 
 step("plan returns 200", plan.status === 200, `status=${plan.status}`);
 const options = plan.json?.options ?? [];
-step("exactly TWO options returned", options.length === 2, `count=${options.length}`);
+step("exactly FOUR options returned", options.length === 4, `count=${options.length}`);
 step(
-  "options are option_a and option_b (no option C)",
-  options.map((o) => o.optionId).join(",") === "option_a,option_b",
+  "options are option_a through option_d",
+  options.map((o) => o.optionId).join(",") ===
+    "option_a,option_b,option_c,option_d",
   options.map((o) => o.optionId).join(","),
+);
+step(
+  "every option sits in a low or moderate impact band",
+  options.every((o) => {
+    const travelers = TRIP.adults + TRIP.children + TRIP.elderly;
+    const perTraveller = o.summary.co2Kg / Math.max(1, travelers);
+    return perTraveller <= 45;
+  }),
+  options.map((o) => `${o.optionId}=${o.summary.co2Kg}kg`).join(","),
 );
 step(
   "each option has a full 4-day itinerary",

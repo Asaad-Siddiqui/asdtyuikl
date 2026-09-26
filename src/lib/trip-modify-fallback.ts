@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+  ITINERARY_OPTION_IDS,
   normalizeOption,
   resolveMode,
   type AiOption,
@@ -235,7 +236,7 @@ export function applyPrototypeModification(
     applied.push("kept a fuller set of experiences");
   }
 
-  const index = option.optionId === "option_a" ? 0 : 1;
+  const index = Math.max(0, ITINERARY_OPTION_IDS.indexOf(option.optionId));
   const normalized = normalizeOption(raw, index, request, "prototype");
 
   if (applied.length === 0) {

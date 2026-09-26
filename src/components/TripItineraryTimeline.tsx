@@ -3,7 +3,11 @@
 import Icon from "@/components/Icon";
 import type { IconName } from "@/lib/icons";
 import { formatCo2, formatINR } from "@/lib/trip-options";
-import { resolveMode, type ItineraryOption } from "@/lib/trip-schema";
+import {
+  resolveMode,
+  type ItineraryOption,
+  type TripDay,
+} from "@/lib/trip-schema";
 
 const MODE_ICONS: Record<string, IconName> = {
   train: "train",
@@ -32,7 +36,19 @@ export default function TripItineraryTimeline({
   return (
     <section aria-label="Day-by-day itinerary" className="space-y-7">
       {option.days.map((day) => (
-        <div key={day.day}>
+        <DayBlock key={day.day} day={day} />
+      ))}
+    </section>
+  );
+}
+
+/**
+ * One day of the itinerary, with its activities on a timeline.
+ * Exported so the saved-trip page can drop it inside a collapsible row.
+ */
+export function DayBlock({ day }: { day: TripDay }) {
+  return (
+    <div>
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h4 className="text-base font-semibold">
               Day {day.day}
@@ -123,9 +139,7 @@ export default function TripItineraryTimeline({
               );
             })}
           </ol>
-        </div>
-      ))}
-    </section>
+    </div>
   );
 }
 

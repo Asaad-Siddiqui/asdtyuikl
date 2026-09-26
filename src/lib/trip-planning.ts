@@ -13,6 +13,7 @@ import {
 } from "@/lib/profile-options";
 import type { ProfileData } from "@/lib/profile-service";
 import {
+  ITINERARY_OPTION_IDS,
   buildAssumptions,
   buildComparisons,
   extractAiOptions,
@@ -199,16 +200,34 @@ export type PlanResult = {
   note: string | null;
 };
 
-function normalizePair(
-  raws: AiOption[],
+/**
+ * Normalizes up to four raw options. The AI supplies the narrative for as many
+ * as it returned; any shortfall is topped up from our own prototype dataset so
+ * the traveller always gets four comparable plans, each labelled honestly.
+ */
+function normalizeSet(
+  entries: { raw: AiOption; source: "ai" | "prototype" }[],
   request: TripRequestSummary,
-  dataSource: "ai" | "prototype",
 ): ItineraryOption[] {
-  return raws
-    .slice(0, 2)
-    .map((raw, index) =>
-      normalizeOption(raw, index === 0 ? 0 : 1, request, dataSource),
+  return entries
+    .slice(0, 4)
+    .map((entry, index) =>
+      normalizeOption(entry.raw, index, request, entry.source),
     );
+}
+
+function assumptionMap(
+  entries: { raw: AiOption }[],
+  request: TripRequestSummary,
+): Record<string, Co2Assumption[]> {
+  const map: Record<string, Co2Assumption[]> = {};
+  entries.slice(0, 4).forEach((entry, index) => {
+    map[ITINERARY_OPTION_IDS[index] ?? "option_d"] = buildAssumptions(
+      entry.raw,
+      request,
+    );
+  });
+  return map;
 }
 
 export async function planTrip(
@@ -221,10 +240,12 @@ export async function planTrip(
     "The traveller's saved accessibility profile (already collected — do not ask for it again):",
     describeProfile(profile, request),
     "",
-    "Produce EXACTLY two itinerary options.",
-    "Option A (optionId \"option_a\") must target the lower estimated CO2 and a practical journey, while fully respecting the accessibility needs.",
-    "Option B (optionId \"option_b\") must be the more comfortable, experience-rich plan — still fully accessible.",
-    "Never make an option inaccessible to create contrast.",
+    "Produce EXACTLY four itinerary options, each genuinely different but ALL low or moderate environmental impact.",
+    "option_a (\"option_a\") is the greenest: the lowest estimated CO2 with a practical journey, fully accessible.",
+    "option_b (\"option_b\") is the comfort-first plan: fewer transfers and the most comfortable stay, still lower-impact.",
+    "option_c (\"option_c\") is the best-value plan: the lowest estimated cost, still lower-impact and accessible.",
+    "option_d (\"option_d\") is the experience-rich plan: the most to see and do, still lower-impact and accessible.",
+    "Never make an option inaccessible, and never propose a high-emission option to create contrast.",
     `Return exactly ${request.days} day object(s), numbered 1 to ${request.days}.`,
     "Use plain integer rupees for all costs (no currency symbols).",
     "Be concise: keep every string under 90 characters, at most 3 focus items, 3 highlights, 2 experiences and 2 activities per day.",
@@ -236,25 +257,32 @@ export async function planTrip(
   const result = await requestJson({ system: SYSTEM_PROMPT, user });
 
   if (result.ok) {
-    const raws = extractAiOptions(result.json).slice(0, 2);
-    if (raws.length === 2) {
-      const options = normalizePair(raws, request, "ai");
+    const aiRaws = extractAiOptions(result.json).slice(0, 4);
+    if (aiRaws.length >= 2) {
+      const topUp = buildPrototypeOptions(request, toProfileSnapshot(profile));
+      const entries: { raw: AiOption; source: "ai" | "prototype" }[] =
+        aiRaws.map((raw) => ({ raw, source: "ai" as const }));
+      for (const candidate of topUp) {
+        if (entries.length >= 4) break;
+        entries.push({ raw: candidate, source: "prototype" });
+      }
+      const options = normalizeSet(entries, request);
       return {
         options,
-        assumptions: {
-          option_a: buildAssumptions(raws[0], request),
-          option_b: buildAssumptions(raws[1], request),
-        },
+        assumptions: assumptionMap(entries, request),
         comparisons: buildComparisons(options),
         engine: "ai",
         rawPayload: result.json,
-        note: null,
+        note:
+          aiRaws.length < 4
+            ? "Our AI assistant returned fewer plans than expected, so we completed the set from our own prototype dataset. Every figure is an estimate."
+            : null,
       };
     }
     console.warn(
       "[trip:plan] model returned an unusable payload:",
       result.model,
-      `options=${raws.length}`,
+      `options=${aiRaws.length}`,
     );
   } else {
     console.warn(
@@ -267,13 +295,14 @@ export async function planTrip(
   // Every provider failed or returned unusable JSON. Build the plan ourselves
   // so the traveller is never stuck — clearly labelled as prototype data.
   const raws = buildPrototypeOptions(request, toProfileSnapshot(profile));
-  const options = normalizePair(raws, request, "prototype");
+  const entries = raws.map((raw) => ({
+    raw,
+    source: "prototype" as const,
+  }));
+  const options = normalizeSet(entries, request);
   return {
     options,
-    assumptions: {
-      option_a: buildAssumptions(raws[0], request),
-      option_b: buildAssumptions(raws[1], request),
-    },
+    assumptions: assumptionMap(entries, request),
     comparisons: buildComparisons(options),
     engine: "prototype",
     rawPayload: { engine: "prototype", options: raws },
@@ -321,7 +350,7 @@ export async function modifyTrip(
     if (raw) {
       const option = normalizeOption(
         { ...raw, optionId: current.optionId },
-        current.optionId === "option_a" ? 0 : 1,
+        Math.max(0, ITINERARY_OPTION_IDS.indexOf(current.optionId)),
         request,
         "ai",
       );

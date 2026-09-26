@@ -7,7 +7,8 @@ import { clsx } from "clsx";
 import { Button, buttonClasses } from "@/components/Button";
 import Icon from "@/components/Icon";
 import ProgressIndicator, { type Stage } from "@/components/ProgressIndicator";
-import TripItineraryTimeline from "@/components/TripItineraryTimeline";
+import TripExperienceView from "@/components/TripExperienceView";
+import TripDayAccordion from "@/components/TripDayAccordion";
 import TripOptionCard from "@/components/TripOptionCard";
 import TripPlanningProgress from "@/components/TripPlanningProgress";
 import {
@@ -19,7 +20,9 @@ import {
   ELDERLY_PRIORITY_OPTIONS,
   MOBILITY_NEED_OPTIONS,
   ORIGIN_SUGGESTIONS,
+  PRIORITY_LABELS,
   PRIORITY_OPTIONS,
+  TRANSPORT_LABELS,
   TRANSPORT_OPTIONS,
   daysBetween,
   defaultPriorities,
@@ -33,8 +36,12 @@ import {
 } from "@/lib/trip-options";
 import {
   MODE_LABELS,
+  environmentalImpact,
+  greenestCo2,
+  pickRecommended,
   type Co2Assumption,
   type ItineraryOption,
+  type OptionId,
   type TripRequestSummary,
 } from "@/lib/trip-schema";
 import { DIETARY_LABELS } from "@/lib/profile-options";
@@ -176,10 +183,53 @@ type PlanState = {
   request: TripRequestSummary;
 };
 
-type View = "questions" | "loading" | "options" | "detail" | "modify" | "saving";
+type View =
+  | "questions"
+  | "loading"
+  | "options"
+  | "experience"
+  | "detail"
+  | "modify"
+  | "saving";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const todayIso = () => new Date().toISOString().slice(0, 10);
+
+/**
+ * Sensible, pre-selected answers.
+ *
+ * The ten questions still appear exactly as they do for a real traveller — but
+ * every one of them opens already answered, so the flow can be walked through by
+ * pressing Continue alone. Touching any answer simply overrides the default.
+ */
+function demoAnswers(profile: PlannerProfile): Answers {
+  const start = new Date();
+  start.setDate(start.getDate() + 21);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 3);
+  const seededPriorities = defaultPriorities(profile.priorities);
+
+  return {
+    from: "Mumbai",
+    to: "Mahabaleshwar",
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+    adults: 2,
+    children: 0,
+    elderly: 0,
+    mobilitySupport: 1,
+    priorities:
+      seededPriorities.length > 0
+        ? seededPriorities
+        : ["low_impact", "accessible"],
+    transportPreference: "public_transport",
+    budget: 25000,
+    tripNeeds: ["step_free_routes", "accessible_transport"],
+    dietaryChoice: profile.dietary.length > 0 ? "yes" : "no",
+    additionalPreferences:
+      "Keep walking low for my father's knees, and prefer quiet, less crowded places.",
+  };
+}
 
 export default function TripPlanner({
   profile,
@@ -190,35 +240,12 @@ export default function TripPlanner({
 }) {
   const router = useRouter();
 
-  const [answers, setAnswers] = useState<Answers>(() => {
-    const start = new Date();
-    start.setDate(start.getDate() + 14);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 2);
-    return {
-      from: "",
-      to: "",
-      startDate: start.toISOString().slice(0, 10),
-      endDate: end.toISOString().slice(0, 10),
-      adults: 1,
-      children: 0,
-      elderly: 0,
-      mobilitySupport: 0,
-      priorities: defaultPriorities(profile.priorities),
-      transportPreference: "",
-      budget: 15000,
-      tripNeeds: [],
-      dietaryChoice: profile.dietary.length > 0 ? "yes" : "",
-      additionalPreferences: "",
-    };
-  });
+  const [answers, setAnswers] = useState<Answers>(() => demoAnswers(profile));
 
   const [view, setView] = useState<View>("questions");
   const [stepIndex, setStepIndex] = useState(0);
   const [plan, setPlan] = useState<PlanState | null>(null);
-  const [selectedId, setSelectedId] = useState<"option_a" | "option_b" | null>(
-    null,
-  );
+  const [selectedId, setSelectedId] = useState<OptionId | null>(null);
   const [modification, setModification] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
@@ -613,37 +640,48 @@ export default function TripPlanner({
   /* ---------------------------------------------------------------- */
 
   const totalTravelers = answers.adults + answers.children + answers.elderly;
+  const isQuestions = view === "questions";
+  const recommendedId = useMemo(
+    () => (plan ? pickRecommended(plan.options) : null),
+    [plan],
+  );
+  const greenest = useMemo(
+    () => (plan ? greenestCo2(plan.options) : undefined),
+    [plan],
+  );
 
   return (
-    <div ref={topRef} className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <header className="mb-8">
+    <div
+      ref={topRef}
+      className={clsx(
+        "mx-auto w-full px-4 py-8 sm:px-6 lg:px-8",
+        isQuestions ? "max-w-6xl" : "max-w-5xl",
+      )}
+    >
+      <header className={isQuestions ? "mb-6 lg:mb-8" : "mb-8"}>
         <p className="text-xs font-semibold tracking-wide text-brand-600 uppercase">
           Plan my trip
         </p>
         <h1 className="mt-1.5 text-3xl font-semibold sm:text-4xl">
           {view === "questions"
-            ? "Plan your next journey 🌿"
+            ? "Plan your next journey"
             : view === "options"
-              ? "Two options, built for you"
-              : selectedOption
-                ? selectedOption.title
-                : "Planning your journey"}
+              ? "Four options, built for you"
+              : view === "experience"
+                ? "Comfort & experience"
+                : selectedOption
+                  ? selectedOption.title
+                  : "Planning your journey"}
         </h1>
-        {view === "questions" && safeIndex === 0 && (
+        {view === "questions" && (
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-600">
             Let&apos;s build a trip that actually fits you
-            {userName ? `, ${userName.split(" ")[0]}` : ""}. A few quick
-            questions — your accessibility profile is already saved, so we
+            {userName ? `, ${userName.split(" ")[0]}` : ""}. Ten quick
+            questions, and your accessibility profile is already saved, so we
             won&apos;t ask for it again.
           </p>
         )}
       </header>
-
-      {view === "questions" && (
-        <div className="mb-6">
-          <ProgressIndicator current={safeIndex + 1} stages={stages} />
-        </div>
-      )}
 
       {error && (
         <p
@@ -670,25 +708,46 @@ export default function TripPlanner({
         />
       )}
 
-      {view === "questions" && (
-        <QuestionCard
-          meta={meta}
-          answers={answers}
-          profile={profile}
-          stepKey={activeKey}
-          error={stepError}
-          isLast={safeIndex >= activeSteps.length - 1}
-          onPatch={patch}
-          onToggle={toggleIn}
-          onBack={goBack}
-          onNext={goNext}
-          canGoBack={safeIndex > 0}
-          totalTravelers={totalTravelers}
-        />
+      {isQuestions && (
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-stretch">
+          <div className="min-w-0">
+            <div className="lg:hidden">
+              <ProgressIndicator current={safeIndex + 1} stages={stages} />
+            </div>
+            <QuestionCard
+              meta={meta}
+              answers={answers}
+              profile={profile}
+              stepKey={activeKey}
+              error={stepError}
+              isLast={safeIndex >= activeSteps.length - 1}
+              onPatch={patch}
+              onToggle={toggleIn}
+              onBack={goBack}
+              onNext={goNext}
+              canGoBack={safeIndex > 0}
+              totalTravelers={totalTravelers}
+              stepNumber={safeIndex + 1}
+              stepCount={activeSteps.length}
+            />
+          </div>
+
+          <JourneyPanel
+            steps={activeSteps}
+            answers={answers}
+            profile={profile}
+            currentIndex={safeIndex}
+            onJump={(index) => {
+              setStepIndex(index);
+              setStepError(null);
+              scrollToTop();
+            }}
+          />
+        </div>
       )}
 
       {view === "options" && plan && (
-        <section aria-label="Your two itinerary options">
+        <section aria-label="Your four itinerary options">
           {plan.note && (
             <p className="mb-5 flex items-start gap-2 rounded-xl border border-sand-200 bg-sand-50 px-4 py-3 text-sm text-sand-700">
               <Icon name="sparkles" className="mt-0.5 h-4.5 w-4.5 shrink-0" />
@@ -704,15 +763,33 @@ export default function TripPlanner({
             {formatINR(plan.request.budget)}
           </p>
 
-          <div className="grid items-start gap-5 lg:grid-cols-2">
+          <p className="mb-5 flex items-start gap-2 rounded-2xl border border-forest-200 bg-forest-50/70 px-4 py-3 text-sm text-forest-900">
+            <Icon name="leaf" className="mt-0.5 h-4.5 w-4.5 shrink-0 text-forest-600" />
+            <span>
+              Every plan below keeps a <strong>low or moderate environmental
+              impact</strong>. That is the constant you choose on, while cost,
+              accessibility, sustainability and time are the trade-offs. We have
+              marked the one that balances them best.
+            </span>
+          </p>
+
+          {/* One option per row: full-width cards read top-to-bottom with
+              far less scrolling than a cramped two-up grid. */}
+          <div className="grid grid-cols-1 gap-5">
             {plan.options.map((option) => (
               <TripOptionCard
                 key={option.optionId}
                 option={option}
                 labels={plan.comparisons[option.optionId] ?? []}
+                impact={environmentalImpact(
+                  option.summary.co2Kg,
+                  plan.request.travelers,
+                  greenest,
+                )}
+                recommended={recommendedId === option.optionId}
                 onSelect={() => {
                   setSelectedId(option.optionId);
-                  setView("detail");
+                  setView("experience");
                   scrollToTop();
                 }}
               />
@@ -731,11 +808,34 @@ export default function TripPlanner({
           </div>
 
           <p className="mt-4 text-xs leading-relaxed text-ink-400">
-            Neither option is labelled &ldquo;best&rdquo; on purpose — the right choice
-            depends on what matters most to you. All estimates are prototype
-            figures.
+            The recommended badge is our suggestion based on your saved
+            priorities, not a claim that the others are wrong. All figures are
+            prototype estimates.
           </p>
         </section>
+      )}
+
+      {view === "experience" && selectedOption && plan && (
+        <TripExperienceView
+          option={selectedOption}
+          options={plan.options}
+          impact={environmentalImpact(
+            selectedOption.summary.co2Kg,
+            plan.request.travelers,
+            greenest,
+          )}
+          recommended={recommendedId === selectedOption.optionId}
+          travelers={plan.request.travelers}
+          onBack={() => {
+            setSelectedId(null);
+            setView("options");
+            scrollToTop();
+          }}
+          onContinue={() => {
+            setView("detail");
+            scrollToTop();
+          }}
+        />
       )}
 
       {view === "detail" && selectedOption && plan && (
@@ -839,6 +939,8 @@ function QuestionCard({
   onNext,
   canGoBack,
   totalTravelers,
+  stepNumber,
+  stepCount,
 }: {
   meta: (typeof STEP_META)[StepKey];
   stepKey: StepKey;
@@ -852,16 +954,27 @@ function QuestionCard({
   onNext: () => void;
   canGoBack: boolean;
   totalTravelers: number;
+  stepNumber: number;
+  stepCount: number;
 }) {
   return (
     <section
       aria-label={meta.title}
-      className="card animate-[fade-up_0.35s_cubic-bezier(0.22,1,0.36,1)_both] p-5 sm:p-7"
+      className="card animate-[fade-up_0.35s_cubic-bezier(0.22,1,0.36,1)_both] flex min-h-[26rem] flex-col p-5 sm:min-h-[30rem] sm:p-7 lg:min-h-[34rem]"
     >
-      <h2 className="text-xl font-semibold sm:text-2xl">{meta.prompt}</h2>
-      {meta.hint && <p className="mt-2 text-sm text-ink-500">{meta.hint}</p>}
+      <p className="text-[11px] font-bold tracking-wide text-forest-600 uppercase">
+        Question {stepNumber} of {stepCount}
+      </p>
+      <h2 className="mt-1.5 text-2xl font-semibold sm:text-3xl">
+        {meta.prompt}
+      </h2>
+      {meta.hint && (
+        <p className="mt-2.5 text-sm leading-relaxed text-ink-500">
+          {meta.hint}
+        </p>
+      )}
 
-      <div className="mt-6">
+      <div className="mt-6 flex-1">
         <Fields
           stepKey={stepKey}
           answers={answers}
@@ -882,7 +995,7 @@ function QuestionCard({
         </p>
       )}
 
-      <div className="mt-7 flex items-center justify-between gap-3">
+      <div className="mt-8 flex items-center justify-between gap-3 border-t border-sand-100 pt-5">
         <button
           type="button"
           onClick={onBack}
@@ -1479,22 +1592,25 @@ function DetailView({
   onConfirm: () => void;
 }) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <button
         type="button"
         onClick={onBack}
         className="inline-flex items-center gap-2 text-sm font-medium text-ink-600 transition-colors hover:text-brand-700"
       >
         <Icon name="chevronLeft" className="h-4.5 w-4.5" />
-        Back to both options
+        Back to all four options
       </button>
 
+      {/* Summary on the left, the collapsible day list on the right, so the
+          full itinerary stays glanceable instead of a long scroll. */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
       <section aria-label="Itinerary summary" className="card p-5 sm:p-6">
         <p className="text-sm leading-relaxed text-ink-600">
           {option.description}
         </p>
 
-        <dl className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <SummaryTile label="Estimated cost" value={formatINR(option.summary.cost)} />
           <SummaryTile label="Travel time" value={option.summary.duration} />
           <SummaryTile
@@ -1556,14 +1672,18 @@ function DetailView({
           </span>
           Your day-by-day itinerary
         </h2>
-        <div className="mt-5">
-          <TripItineraryTimeline option={option} />
+        <p className="mt-1.5 text-xs text-ink-500">
+          Day one is open. Tap any other day to expand it.
+        </p>
+        <div className="mt-4">
+          <TripDayAccordion option={option} />
         </div>
-        <p className="mt-5 text-xs leading-relaxed text-ink-400">
+        <p className="mt-4 text-xs leading-relaxed text-ink-400">
           * Estimated CO₂ is a prototype calculation, not a verified
           environmental measurement.
         </p>
       </section>
+      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <Button size="lg" onClick={onConfirm}>
@@ -1604,5 +1724,189 @@ function SummaryTile({
         )}
       </dd>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* The full-height question panel                                      */
+/* ------------------------------------------------------------------ */
+
+/** A one-line, human summary of what each question currently holds. */
+function stepSummary(
+  key: StepKey,
+  answers: Answers,
+  profile: PlannerProfile,
+): string {
+  switch (key) {
+    case "from":
+      return answers.from || "Not set yet";
+    case "to":
+      return answers.to || "Not set yet";
+    case "dates":
+      return formatDateRange(answers.startDate, answers.endDate);
+    case "travelers": {
+      const total =
+        answers.adults + answers.children + answers.elderly;
+      return `${total} traveller${total === 1 ? "" : "s"} · ${answers.adults} adult${
+        answers.adults === 1 ? "" : "s"
+      }`;
+    }
+    case "elderly":
+    case "children":
+    case "mobility":
+      return answers.tripNeeds.length > 0
+        ? `${answers.tripNeeds.length} selected`
+        : "Nothing selected";
+    case "dietary":
+      return answers.dietaryChoice === "yes"
+        ? `${profile.dietary.length} saved preference${
+            profile.dietary.length === 1 ? "" : "s"
+          } prioritised`
+        : "Not prioritised this trip";
+    case "priorities":
+      return (
+        answers.priorities
+          .map((value) => PRIORITY_LABELS[value] ?? value)
+          .join(", ") || "None selected"
+      );
+    case "transport":
+      return (
+        TRANSPORT_LABELS[answers.transportPreference] ?? "Not set yet"
+      );
+    case "budget":
+      return formatINR(answers.budget);
+    case "notes":
+      return answers.additionalPreferences.trim().length > 0
+        ? "Notes added"
+        : "Nothing extra";
+    default:
+      return "";
+  }
+}
+
+/**
+ * The right-hand rectangle: every question in the flow, one after another, with
+ * the current one highlighted. It doubles as navigation — tapping a step jumps
+ * straight to it — so the panel earns its space instead of decorating it.
+ */
+function JourneyPanel({
+  steps,
+  answers,
+  profile,
+  currentIndex,
+  onJump,
+}: {
+  steps: StepKey[];
+  answers: Answers;
+  profile: PlannerProfile;
+  currentIndex: number;
+  onJump: (index: number) => void;
+}) {
+  const total = steps.length;
+  const percent = Math.round(((currentIndex + 1) / total) * 100);
+
+  return (
+    <aside
+      aria-label="All trip questions"
+      className="card flex flex-col overflow-hidden lg:sticky lg:top-24 lg:h-[calc(100dvh-7.5rem)]"
+    >
+      <div className="border-b border-sand-100 bg-gradient-to-br from-forest-50 to-warm-100 p-5">
+        <p className="text-[11px] font-bold tracking-wide text-forest-700 uppercase">
+          Your trip in {total} answers
+        </p>
+        <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
+          Every question is pre-filled with a sensible default. Sort out any you
+          want, then keep pressing Continue.
+        </p>
+        <div className="mt-3 flex items-baseline justify-between gap-3">
+          <p className="text-xs font-bold text-forest-800">
+            Step {currentIndex + 1} of {total}
+          </p>
+          <p className="text-xs font-semibold text-sand-600">
+            {percent}% complete
+          </p>
+        </div>
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/70">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-forest-500 to-forest-700 transition-[width] duration-500 ease-out"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      </div>
+
+      <ol className="flex-1 space-y-1 overflow-y-auto p-3">
+        {steps.map((key, index) => {
+          const status =
+            index < currentIndex
+              ? "done"
+              : index === currentIndex
+                ? "current"
+                : "pending";
+          const isCurrent = status === "current";
+
+          return (
+            <li key={key}>
+              <button
+                type="button"
+                onClick={() => onJump(index)}
+                aria-current={isCurrent ? "step" : undefined}
+                className={clsx(
+                  "flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors duration-200",
+                  isCurrent
+                    ? "bg-forest-700 shadow-sm shadow-forest-800/20"
+                    : "hover:bg-forest-50",
+                )}
+              >
+                <span
+                  className={clsx(
+                    "mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold",
+                    isCurrent
+                      ? "bg-white/20 text-white"
+                      : status === "done"
+                        ? "bg-forest-600 text-white"
+                        : "bg-sand-100 text-sand-500",
+                  )}
+                >
+                  {status === "done" ? (
+                    <Icon name="check" className="h-3.5 w-3.5" strokeWidth={3} />
+                  ) : (
+                    index + 1
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={clsx(
+                      "block text-sm font-semibold",
+                      isCurrent ? "text-white" : "text-ink-800",
+                    )}
+                  >
+                    {STEP_META[key].chip}
+                  </span>
+                  <span
+                    className={clsx(
+                      "mt-0.5 block truncate text-xs",
+                      isCurrent ? "text-emerald-100" : "text-ink-500",
+                    )}
+                  >
+                    {stepSummary(key, answers, profile)}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+
+      <div className="border-t border-sand-100 bg-sand-50/60 p-4">
+        <p className="flex items-start gap-2 text-xs leading-relaxed text-sand-600">
+          <Icon
+            name="sparkles"
+            className="mt-0.5 h-3.5 w-3.5 shrink-0 text-forest-600"
+          />
+          Auto-filled so you can move through all {total} questions with
+          Continue alone. Tap any step to jump straight to it.
+        </p>
+      </div>
+    </aside>
   );
 }
