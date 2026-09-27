@@ -3,22 +3,43 @@
 import { useApp } from '@/components/travello/AppProvider'
 import { SustainabilityScore } from '@/components/travello/SustainabilityScore'
 import { BadgeCard } from '@/components/travello/BadgeCard'
-import { cn } from '@/lib/format';import { badges as allBadges } from '@/lib/travello-data';import { Zap, MapPin, Trophy, Leaf, Shield, Award, Flame } from 'lucide-react';export function ImpactPage() {
-  const { user, completions, reports } = useApp()
+import { cn } from '@/lib/format'
+import { badges as allBadges } from '@/lib/travello-data'
+import {
+  Accessibility,
+  Award,
+  ClipboardList,
+  Flame,
+  Footprints,
+  Leaf,
+  MapPin,
+  Recycle,
+  Shield,
+  Store,
+  Trophy,
+  Zap,
+} from 'lucide-react'
+import { PageHero, heroArt } from '@/components/travello/ui/PageKit'
+
+const FALLBACK_ART =
+  'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1600&h=600&fit=crop&auto=format'
+
+export function ImpactPage() {
+  const { user, completions, reports, destinations } = useApp()
 
   const recentActivity = [
     ...completions
       .filter((c) => c.status === 'completed')
       .map((c) => ({
         type: 'challenge' as const,
-        icon: '🏆',
+        icon: Trophy,
         text: `Completed Challenge`,
         points: c.pointsAwarded,
         date: c.completedAt || c.startedAt,
       })),
     ...reports.slice(0, 3).map((r) => ({
       type: 'report' as const,
-      icon: '📋',
+      icon: ClipboardList,
       text: `Reported ${r.category.replace('_', ' ')} observation`,
       points: 0,
       date: r.createdAt,
@@ -26,22 +47,21 @@ import { cn } from '@/lib/format';import { badges as allBadges } from '@/lib/tra
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="w-full space-y-4 sm:space-y-5">
       
-      {/* ── Page Header ── */}
-      <div className="bg-white rounded-3xl border border-sand-200 p-6 sm:p-8 shadow-sm">
-        <div className="flex items-center gap-2.5 mb-1.5">
-          <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-800">
-            <Trophy className="w-5 h-5" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-forest-900 tracking-tight">
-            My Environmental & Community Impact
-          </h1>
-        </div>
-        <p className="text-sm sm:text-base text-sand-600">
-          Track your verified sustainability contributions, earned badges, and community leaderboard ranking.
-        </p>
-      </div>
+      <PageHero
+        eyebrow="Verified contribution"
+        eyebrowIcon={Leaf}
+        title="My Environmental & Community Impact"
+        subtitle="Everything below is measured from the missions you finished and the reports you filed — nothing here is estimated for effect."
+        pills={[
+          { icon: Shield, label: 'Verified actions' },
+          { icon: Award, label: 'Badges earned' },
+        ]}
+        image={heroArt(destinations, ['munnar', 'matheran', 'manali'], FALLBACK_ART)}
+        scriptLines={['Measure It', 'Then Improve It']}
+        action={{ href: '/challenges', label: 'Earn more points' }}
+      />
 
       {/* ── Impact Hero Profile Card ── */}
       <div className="bg-white rounded-3xl border border-sand-200 p-6 sm:p-8 shadow-sm">
@@ -103,15 +123,17 @@ import { cn } from '@/lib/format';import { badges as allBadges } from '@/lib/tra
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Destinations Visited', value: user.destinationsVisited, icon: '🗺️', sub: 'Eco hubs logged' },
-                { label: 'Local Businesses', value: 5, icon: '🏘️', sub: 'Homestays & guides' },
-                { label: 'Reports Submitted', value: reports.length, icon: '📋', sub: 'Ranger notifications' },
-                { label: 'Waste Actions', value: 3, icon: '♻️', sub: 'Cleanups & refills' },
-                { label: 'Low-Impact Hikes', value: 3, icon: '🚶', sub: 'Zero-emission legs' },
-                { label: 'Accessibility Audits', value: 1, icon: '♿', sub: 'Wheelchair verification' },
+                { label: 'Destinations Visited', value: user.destinationsVisited, icon: MapPin, sub: 'Eco hubs logged' },
+                { label: 'Local Businesses', value: 5, icon: Store, sub: 'Homestays & guides' },
+                { label: 'Reports Submitted', value: reports.length, icon: ClipboardList, sub: 'Ranger notifications' },
+                { label: 'Waste Actions', value: 3, icon: Recycle, sub: 'Cleanups & refills' },
+                { label: 'Low-Impact Hikes', value: 3, icon: Footprints, sub: 'Zero-emission legs' },
+                { label: 'Accessibility Audits', value: 1, icon: Accessibility, sub: 'Wheelchair verification' },
               ].map((item, i) => (
                 <div key={i} className="bg-sand-50/80 rounded-2xl p-4.5 border border-sand-200/60 text-center flex flex-col items-center justify-center">
-                  <span className="text-3xl mb-1">{item.icon}</span>
+                  <span className="mb-1.5 grid h-9 w-9 place-items-center rounded-xl border border-primary-100 bg-primary-50 text-primary-700">
+                    <item.icon className="h-4 w-4" />
+                  </span>
                   <div className="text-2xl font-black text-forest-900">{item.value}</div>
                   <div className="text-xs font-bold text-forest-800 mt-0.5">{item.label}</div>
                   <div className="text-[11px] text-sand-500">{item.sub}</div>
@@ -126,8 +148,8 @@ import { cn } from '@/lib/format';import { badges as allBadges } from '@/lib/tra
             <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-sand-200">
               {recentActivity.map((activity, i) => (
                 <div key={i} className="relative flex items-center gap-4">
-                  <div className="absolute -left-6 w-6 h-6 bg-white border-2 border-emerald-500 rounded-full flex items-center justify-center text-xs shrink-0 shadow-sm">
-                    {activity.icon}
+                  <div className="absolute -left-6 w-6 h-6 bg-white border-2 border-primary-500 rounded-full flex items-center justify-center text-primary-700 shrink-0 shadow-sm">
+                    <activity.icon className="h-3 w-3" />
                   </div>
                   <div className="flex-1 bg-sand-50/80 rounded-2xl p-4 border border-sand-200/60 flex items-center justify-between">
                     <div>

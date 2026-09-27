@@ -1,146 +1,218 @@
 "use client";
 
-import { Link } from '@/lib/router'
-import { cn } from '@/lib/format';import { Clock, Zap, ChevronRight, CheckCircle2, Sparkles, Users } from 'lucide-react';interface ChallengeCardProps {
-  id: string
-  title: string
-  description: string
-  icon: string
-  category?: string
-  difficulty: string
-  points: number
-  estimatedMinutes: number
-  isCompleted?: boolean
-  isRecommended?: boolean
-  className?: string
+import { Link } from "@/lib/router";
+import {
+  Accessibility,
+  ArrowRight,
+  Bus,
+  CheckCircle2,
+  Clock,
+  Droplets,
+  Leaf,
+  MapPin,
+  Recycle,
+  TreePine,
+  Users,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+
+import { cn } from "@/lib/format";
+
+/**
+ * One mission, as a row.
+ *
+ * Progress is real: it is the step count stored on the traveller's completion
+ * measured against the mission's own instruction list. There is no invented
+ * "explorers completed" figure — anything the card states it can point at.
+ */
+
+export const CHALLENGE_CATEGORIES: Record<
+  string,
+  { label: string; icon: LucideIcon; tone: string }
+> = {
+  transport: {
+    label: "Eco travel",
+    icon: Bus,
+    tone: "border-primary-200 bg-primary-50 text-primary-800",
+  },
+  environment: {
+    label: "Conservation",
+    icon: Leaf,
+    tone: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  },
+  conservation: {
+    label: "Conservation",
+    icon: TreePine,
+    tone: "border-violet-200 bg-violet-50 text-violet-800",
+  },
+  community: {
+    label: "Local support",
+    icon: Users,
+    tone: "border-amber-200 bg-amber-50 text-amber-800",
+  },
+  waste: {
+    label: "Waste reduction",
+    icon: Recycle,
+    tone: "border-sky-200 bg-sky-50 text-sky-800",
+  },
+  water: {
+    label: "Water care",
+    icon: Droplets,
+    tone: "border-cyan-200 bg-cyan-50 text-cyan-800",
+  },
+  accessibility: {
+    label: "Accessibility",
+    icon: Accessibility,
+    tone: "border-indigo-200 bg-indigo-50 text-indigo-800",
+  },
+  infrastructure: {
+    label: "Trail care",
+    icon: Wrench,
+    tone: "border-sand-300 bg-sand-100 text-sand-800",
+  },
+};
+
+interface ChallengeCardProps {
+  id: string;
+  title: string;
+  description: string;
+  /** Destination photo for the row thumbnail. */
+  image?: string;
+  category?: string;
+  difficulty: string;
+  points: number;
+  estimatedMinutes: number;
+  destinationName?: string;
+  isCompleted?: boolean;
+  isRecommended?: boolean;
+  /** Steps completed so far, and how many steps the mission has. */
+  progress?: number;
+  progressTotal?: number;
+  className?: string;
 }
 
 export function ChallengeCard({
   id,
   title,
   description,
-  icon,
+  image,
   category,
   difficulty,
   points,
   estimatedMinutes,
+  destinationName,
   isCompleted,
   isRecommended,
+  progress = 0,
+  progressTotal = 0,
   className,
 }: ChallengeCardProps) {
-  // Deterministic fake completed count for high-end feel
-  const explorerCount = (title.length * 37) % 800 + 240
+  const meta = CHALLENGE_CATEGORIES[category ?? ""] ?? CHALLENGE_CATEGORIES.transport;
+  const Icon = meta.icon;
+
+  const started = progress > 0 && !isCompleted;
+  const total = Math.max(progressTotal, 1);
+  const done = Math.min(progress, total);
+  const percent = isCompleted ? 100 : Math.round((done / total) * 100);
+  const label = isCompleted ? "Completed" : started ? "Continue" : "Start";
 
   return (
     <Link
       to={`/challenges/${id}`}
       className={cn(
-        'group relative block bg-white rounded-3xl border border-sand-200/90 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden',
-        isCompleted && 'bg-emerald-50/40 border-emerald-200/80 shadow-xs',
-        isRecommended && 'ring-2 ring-emerald-500/80 ring-offset-2 shadow-md shadow-emerald-600/10',
-        className
+        "group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-sand-200/80 bg-white p-3 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-forest-200 hover:shadow-md sm:flex-row sm:items-center",
+        isCompleted && "border-primary-200/80 bg-primary-50/40",
+        className,
       )}
     >
-      {/* Decorative top accent line */}
-      <div
-        className={cn(
-          'absolute top-0 left-0 right-0 h-1 bg-gradient-to-r transition-all',
-          isCompleted
-            ? 'from-emerald-500 via-teal-400 to-emerald-600'
-            : difficulty.toLowerCase() === 'easy'
-            ? 'from-emerald-400 to-teal-500'
-            : difficulty.toLowerCase() === 'medium'
-            ? 'from-amber-400 to-orange-500'
-            : 'from-purple-500 to-indigo-600'
+      <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl bg-sand-100 sm:h-24 sm:w-32">
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={image}
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          />
+        ) : (
+          <span className="grid h-full w-full place-items-center bg-forest-50 text-forest-500">
+            <Icon className="h-5 w-5" />
+          </span>
         )}
-      />
+        {isRecommended && !isCompleted && (
+          <span className="absolute top-2 left-2 rounded-full bg-white/95 px-2 py-0.5 text-[9.5px] font-black tracking-wide text-forest-800 uppercase">
+            Recommended
+          </span>
+        )}
+      </div>
 
-      <div className="flex items-start gap-4 sm:gap-6">
-        
-        {/* Dynamic Icon Badge Container */}
-        <div
-          className={cn(
-            'w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0 shadow-md group-hover:scale-105 transition-all duration-300 border',
-            isCompleted
-              ? 'bg-gradient-to-br from-emerald-500 to-teal-700 text-white border-emerald-400'
-              : difficulty.toLowerCase() === 'easy'
-              ? 'bg-gradient-to-br from-emerald-50 to-teal-100 text-emerald-800 border-emerald-200'
-              : difficulty.toLowerCase() === 'medium'
-              ? 'bg-gradient-to-br from-amber-50 to-orange-100 text-amber-900 border-amber-200'
-              : 'bg-gradient-to-br from-purple-50 to-indigo-100 text-purple-900 border-purple-200'
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-black tracking-wide uppercase",
+              meta.tone,
+            )}
+          >
+            <meta.icon className="h-3 w-3" />
+            {meta.label}
+          </span>
+          <span className="rounded-full border border-sand-200 bg-sand-50 px-2.5 py-0.5 text-[10px] font-bold text-sand-600 capitalize">
+            {difficulty}
+          </span>
+          {isCompleted && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-forest-800 px-2.5 py-0.5 text-[10px] font-bold text-white">
+              <CheckCircle2 className="h-3 w-3 text-primary-300" />
+              Verified
+            </span>
           )}
-        >
-          {icon}
         </div>
 
-        {/* Challenge Info */}
-        <div className="flex-1 min-w-0 space-y-2">
-          
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-serif font-bold text-forest-950 text-lg group-hover:text-emerald-700 transition-colors">
-              {title}
-            </h3>
+        <h3 className="mt-2 text-[0.95rem] leading-snug font-bold text-forest-950 transition-colors group-hover:text-forest-700">
+          {title}
+        </h3>
+        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-sand-600">
+          {description}
+        </p>
 
-            {isRecommended && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-900 text-xs font-black rounded-full border border-emerald-300 shadow-2xs">
-                <Sparkles className="w-3 h-3 text-amber-500" /> Recommended Mission
-              </span>
-            )}
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-sand-500">
+          <span className="inline-flex items-center gap-1">
+            <MapPin className="h-3 w-3 text-sand-400" />
+            {destinationName ?? "Any destination"}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Clock className="h-3 w-3 text-sand-400" />
+            {Math.max(1, Math.round(estimatedMinutes / 60))} hrs
+          </span>
+        </div>
+      </div>
 
-            {isCompleted && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-600 text-white text-xs font-bold rounded-full shadow-xs">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Verified Completed
-              </span>
-            )}
-          </div>
+      <div className="flex shrink-0 items-center gap-4 sm:w-40 sm:flex-col sm:items-stretch sm:gap-2.5">
+        <span className="inline-flex items-center gap-1 text-xs font-black text-forest-800">
+          <Leaf className="h-3.5 w-3.5 text-primary-600" />
+          {points} pts
+        </span>
 
-          <p className="text-sm text-sand-700 leading-relaxed line-clamp-2">
-            {description}
-          </p>
-
-          {/* Meta Tags */}
-          <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap pt-1">
-            
-            {/* Difficulty Badge */}
+        <div className="min-w-0 flex-1 sm:flex-none">
+          <span className="block text-right text-[10.5px] font-bold text-sand-500">
+            {isCompleted ? "Done" : `${done}/${total}`}
+          </span>
+          <span
+            className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-sand-200/80"
+            aria-hidden="true"
+          >
             <span
-              className={cn(
-                'px-3 py-1 rounded-full font-bold uppercase tracking-wider text-[10px] border shadow-2xs',
-                difficulty.toLowerCase() === 'easy'
-                  ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                  : difficulty.toLowerCase() === 'medium'
-                  ? 'bg-amber-100 text-amber-900 border-amber-300'
-                  : 'bg-purple-100 text-purple-900 border-purple-300'
-              )}
-            >
-              {difficulty}
-            </span>
-
-            {/* Estimated Minutes */}
-            <span className="flex items-center gap-1.5 text-sand-700 font-semibold bg-sand-100/80 px-3 py-1 rounded-full border border-sand-200">
-              <Clock className="w-3.5 h-3.5 text-sand-500" />
-              {estimatedMinutes} mins
-            </span>
-
-            {/* Impact Points Gold Chip */}
-            <span className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 text-forest-950 font-black text-xs rounded-full shadow-xs">
-              <Zap className="w-3.5 h-3.5 fill-current text-forest-950" />
-              +{points} Impact Pts
-            </span>
-
-            {/* Explorer Count */}
-            <span className="hidden md:flex items-center gap-1 text-sand-500 font-medium text-[11px] ml-auto">
-              <Users className="w-3.5 h-3.5 text-sand-400" /> {explorerCount} Explorers Completed
-            </span>
-          </div>
-
+              className="block h-full rounded-full bg-forest-500 transition-all duration-700 ease-out group-hover:bg-forest-600"
+              style={{ width: `${percent}%` }}
+            />
+          </span>
         </div>
 
-        {/* Right Action Button Arrow */}
-        <div className="w-10 h-10 rounded-2xl bg-sand-100 group-hover:bg-emerald-600 group-hover:text-white text-sand-600 flex items-center justify-center transition-all duration-300 shrink-0 self-center shadow-xs">
-          <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
-        </div>
-
+        <span className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-forest-800 px-4 py-2 text-[11px] font-bold text-white transition-colors group-hover:bg-forest-900">
+          {label}
+          <ArrowRight className="h-3.5 w-3.5 text-primary-300" />
+        </span>
       </div>
     </Link>
-  )
+  );
 }

@@ -56,7 +56,7 @@ export function EvidencePage() {
   const now = new Date()
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-4 sm:space-y-5">
       <button
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-sand-200 text-sand-700 hover:text-forest-900 rounded-xl text-sm font-semibold shadow-2xs transition-all"

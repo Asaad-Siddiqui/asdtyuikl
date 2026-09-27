@@ -626,6 +626,8 @@ export type AppData = {
     startedAt: string;
     completedAt?: string;
     pointsAwarded: number;
+    /** Steps done so far, rendered against the challenge's instruction count. */
+    progress: number;
   }[];
   reports: ReportView[];
   posts: CommunityPostView[];
@@ -693,6 +695,7 @@ export async function loadAppData(userId: string): Promise<AppData> {
       startedAt: row.startedAt.toISOString(),
       completedAt: row.completedAt?.toISOString(),
       pointsAwarded: row.pointsAwarded,
+      progress: row.progress,
     })),
     reports,
     posts,

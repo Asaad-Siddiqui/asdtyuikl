@@ -3,14 +3,43 @@
 import { Link } from '@/lib/router'
 import { useApp } from '@/components/travello/AppProvider'
 import { cn } from '@/lib/format'
-import { MapPin, ChevronRight, Sparkles, Trophy, Award, Zap } from 'lucide-react'
+import {
+  Accessibility,
+  Award,
+  BarChart3,
+  ChevronRight,
+  ClipboardList,
+  MapPin,
+  Sparkles,
+  TreePine,
+  Trophy,
+  Zap,
+} from 'lucide-react'
+import { PageHero, heroArt } from '@/components/travello/ui/PageKit'
+
+const FALLBACK_ART =
+  'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1600&h=600&fit=crop&auto=format'
 
 export function ProfilePage() {
-  const { user } = useApp()
+  const { user, destinations } = useApp()
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-4 sm:space-y-5">
       
+      <PageHero
+        eyebrow="Your account"
+        eyebrowIcon={Sparkles}
+        title={`${user.displayName}`}
+        subtitle="Your profile drives every itinerary we build — the places, the pace and the access needs all come from here."
+        pills={[
+          { icon: Zap, label: `${user.impactPoints.toLocaleString('en-IN')} impact points` },
+          { icon: Award, label: `${user.badgesEarned} badges earned` },
+        ]}
+        image={heroArt(destinations, ['matheran', 'munnar', 'manali'], FALLBACK_ART)}
+        scriptLines={['Travel Well', 'Travel Kind']}
+        action={{ href: '/impact', label: 'See my impact' }}
+      />
+
       {/* ── Profile Header Card ── */}
       <div className="bg-white rounded-3xl border border-sand-200 p-6 sm:p-8 shadow-sm">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
@@ -52,19 +81,21 @@ export function ProfilePage() {
       {/* ── Navigation Menu ── */}
       <div className="bg-white rounded-3xl border border-sand-200 overflow-hidden shadow-sm">
         {[
-          { label: 'My Impact & Leaderboard', path: '/impact', icon: '📊', sub: 'View badges & environmental impact' },
-          { label: 'Eco Challenges & Missions', path: '/challenges', icon: '🏆', sub: 'Take action & earn rewards' },
-          { label: 'Incident Reports & Telemetry', path: '/reports', icon: '📋', sub: 'Report trail and waste issues' },
-          { label: 'AI Smart Trip Planner', path: '/plan', icon: '✨', sub: 'Generate sustainable travel itineraries' },
-          { label: 'Explore Verified Hubs', path: '/explore', icon: '🌲', sub: 'Inspect sustainability scores' },
-          { label: 'Accessibility & Needs Profile', path: '/accessibility', icon: '♿', sub: 'Update the needs we plan around' },
+          { label: 'My Impact & Leaderboard', path: '/impact', icon: BarChart3, sub: 'View badges & environmental impact' },
+          { label: 'Eco Challenges & Missions', path: '/challenges', icon: Trophy, sub: 'Take action & earn rewards' },
+          { label: 'Incident Reports & Telemetry', path: '/reports', icon: ClipboardList, sub: 'Report trail and waste issues' },
+          { label: 'AI Smart Trip Planner', path: '/plan', icon: Sparkles, sub: 'Generate sustainable travel itineraries' },
+          { label: 'Explore Verified Hubs', path: '/explore', icon: TreePine, sub: 'Inspect sustainability scores' },
+          { label: 'Accessibility & Needs Profile', path: '/accessibility', icon: Accessibility, sub: 'Update the needs we plan around' },
         ].map((item) => (
           <Link
             key={item.path}
             to={item.path}
             className="flex items-center gap-4 px-6 py-4.5 hover:bg-sand-50/80 transition-all border-b border-sand-100 last:border-0"
           >
-            <span className="text-2xl p-2 bg-sand-50 rounded-xl">{item.icon}</span>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-primary-100 bg-primary-50 text-primary-700">
+              <item.icon className="h-4.5 w-4.5" />
+            </span>
             <div className="flex-1">
               <span className="text-sm sm:text-base font-bold text-forest-900 block">{item.label}</span>
               <span className="text-xs text-sand-500 font-medium">{item.sub}</span>
@@ -78,7 +109,9 @@ export function ProfilePage() {
           keeps its full-height conversational layout. */}
       <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
-          <span className="text-2xl p-2 bg-white rounded-xl shrink-0">♿</span>
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-forest-700">
+            <Accessibility className="h-4.5 w-4.5" />
+          </span>
           <div>
             <h2 className="text-sm sm:text-base font-bold text-forest-950">
               Your accessibility & needs profile

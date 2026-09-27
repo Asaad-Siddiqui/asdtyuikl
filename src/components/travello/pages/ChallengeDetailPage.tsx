@@ -31,7 +31,7 @@ import { ArrowLeft, Clock, Zap, CheckCircle, Camera, AlertCircle, Sparkles } fro
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="mx-auto w-full max-w-4xl space-y-4 sm:space-y-5">
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}

@@ -9,6 +9,7 @@ import Icon from "@/components/Icon";
 import ProgressIndicator, { type Stage } from "@/components/ProgressIndicator";
 import TripExperienceView from "@/components/TripExperienceView";
 import TripDayAccordion from "@/components/TripDayAccordion";
+import GroupMatchPanel from "@/components/GroupMatchPanel";
 import TripOptionCard from "@/components/TripOptionCard";
 import TripPlanningProgress from "@/components/TripPlanningProgress";
 import {
@@ -654,7 +655,8 @@ export default function TripPlanner({
     <div
       ref={topRef}
       className={clsx(
-        "mx-auto w-full px-4 py-8 sm:px-6 lg:px-8",
+        // The app frame owns page padding now; the wizard only sets its width.
+        "mx-auto w-full",
         isQuestions ? "max-w-6xl" : "max-w-5xl",
       )}
     >
@@ -841,6 +843,7 @@ export default function TripPlanner({
       {view === "detail" && selectedOption && plan && (
         <DetailView
           option={selectedOption}
+          request={plan.request}
           onBack={() => {
             setSelectedId(null);
             setView("options");
@@ -1582,11 +1585,13 @@ function Counter({
 
 function DetailView({
   option,
+  request,
   onBack,
   onModify,
   onConfirm,
 }: {
   option: ItineraryOption;
+  request: TripRequestSummary;
   onBack: () => void;
   onModify: () => void;
   onConfirm: () => void;
@@ -1684,6 +1689,8 @@ function DetailView({
         </p>
       </section>
       </div>
+
+      <GroupMatchPanel request={request} option={option} />
 
       <div className="flex flex-wrap items-center gap-3">
         <Button size="lg" onClick={onConfirm}>

@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import Icon from "@/components/Icon";
 import TripDayAccordion from "@/components/TripDayAccordion";
+import GroupMatchPanel from "@/components/GroupMatchPanel";
 import { buttonClasses } from "@/components/Button";
 import {
   DIETARY_LABELS,
@@ -25,6 +26,19 @@ import { MODE_LABELS, type SavedTripView } from "@/lib/trip-schema";
 export default function TripResultView({ trip }: { trip: SavedTripView }) {
   const { itinerary, profileSnapshot } = trip;
   const travelers = trip.adults + trip.children + trip.elderly;
+
+  // Fed to the Travel Together matcher; everyone matched would share this plan.
+  const groupRequest = {
+    from: trip.fromLocation,
+    to: trip.toLocation,
+    startDate: trip.startDate,
+    endDate: trip.endDate,
+    adults: trip.adults,
+    children: trip.children,
+    elderly: trip.elderly,
+    priorities: trip.priorities,
+    tripNeeds: trip.tripNeeds,
+  };
 
   const requirements = [
     {
@@ -126,6 +140,8 @@ export default function TripResultView({ trip }: { trip: SavedTripView }) {
           <Icon name="arrowRight" className="h-4.5 w-4.5" />
         </Link>
       </div>
+
+      <GroupMatchPanel request={groupRequest} option={itinerary} />
 
       {/* Two balanced columns so the page needs almost no scrolling. */}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start">

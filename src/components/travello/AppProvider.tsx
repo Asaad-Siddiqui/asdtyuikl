@@ -213,6 +213,7 @@ export function AppProvider({
             status: "in_progress",
             startedAt: new Date().toISOString(),
             pointsAwarded: 0,
+            progress: 0,
           },
         ];
       });
@@ -243,6 +244,7 @@ export function AppProvider({
             startedAt: new Date().toISOString(),
             completedAt: new Date().toISOString(),
             pointsAwarded: points,
+            progress: challenge?.instructions.length ?? 0,
           },
         ];
       });

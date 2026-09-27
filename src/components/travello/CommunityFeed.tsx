@@ -15,7 +15,11 @@ import {
 } from "lucide-react";
 
 import { useApp } from "@/components/travello/AppProvider";
+import { PageHero, heroArt } from "@/components/travello/ui/PageKit";
 import { cn } from "@/lib/format";
+
+const FALLBACK_ART =
+  "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1600&h=600&fit=crop&auto=format";
 
 /**
  * Community feed.
@@ -69,21 +73,20 @@ export function CommunityFeed() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
-      <div className="rounded-3xl border border-sand-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="mb-1.5 flex items-center gap-2.5">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-100 text-emerald-800">
-            <Users className="h-5 w-5" />
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-forest-900 sm:text-3xl">
-            Conscious Travellers Community
-          </h1>
-        </div>
-        <p className="text-sm text-sand-600 sm:text-base">
-          Share verified trail journeys, eco-achievements and sustainable travel
-          inspiration. Everything you post is saved to your account.
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-5xl space-y-4 sm:space-y-5">
+      <PageHero
+        eyebrow="Traveller stories"
+        eyebrowIcon={Users}
+        title="Conscious Travellers Community"
+        subtitle="Share verified trail journeys, eco-achievements and sustainable travel inspiration — everything you post is saved to your account."
+        pills={[
+          { icon: Trophy, label: "Verified missions" },
+          { icon: Sparkles, label: "Real itineraries" },
+        ]}
+        image={heroArt(destinations, ["munnar", "goa", "matheran"], FALLBACK_ART)}
+        scriptLines={["Share the Trail", "Keep it Wilder"]}
+        action={{ href: "/challenges", label: "Earn a badge" }}
+      />
 
       {/* Composer */}
       <form

@@ -4,7 +4,22 @@ import { useState } from 'react'
 import { useNavigate } from '@/lib/router'
 import { useApp } from '@/components/travello/AppProvider'
 import { cn } from '@/lib/format'
-import { AlertTriangle, Camera, MapPin, CheckCircle, ArrowLeft, Send, Sparkles } from 'lucide-react';const categories = [
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Camera,
+  CheckCircle,
+  MapPin,
+  Send,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react'
+import { PageHero, heroArt } from '@/components/travello/ui/PageKit'
+
+const FALLBACK_ART =
+  'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=1600&h=600&fit=crop&auto=format'
+
+const categories = [
   { key: 'waste', label: 'Waste & Litter', icon: '🗑️', color: 'bg-amber-100 border-amber-300 text-amber-900' },
   { key: 'overcrowding', label: 'Heavy Crowding', icon: '👥', color: 'bg-orange-100 border-orange-300 text-orange-900' },
   { key: 'accessibility', label: 'Accessibility Barrier', icon: '♿', color: 'bg-blue-100 border-blue-300 text-blue-900' },
@@ -57,7 +72,7 @@ export function ReportPage() {
 
   if (submitted) {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <div className="mx-auto w-full max-w-2xl space-y-4 sm:space-y-5">
         <div className="bg-white rounded-3xl border border-sand-200 overflow-hidden shadow-sm">
           <div className="bg-emerald-50 p-8 text-center space-y-2 border-b border-emerald-100">
             <CheckCircle className="w-16 h-16 text-emerald-600 mx-auto mb-2" />
@@ -115,7 +130,7 @@ export function ReportPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-4 sm:space-y-5">
       <button
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-sand-200 text-sand-700 hover:text-forest-900 rounded-xl text-sm font-semibold shadow-2xs transition-all"
@@ -124,19 +139,18 @@ export function ReportPage() {
         Back
       </button>
 
-      <div className="bg-white rounded-3xl border border-sand-200 p-6 sm:p-8 shadow-sm">
-        <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-700">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-forest-900 tracking-tight">
-            Report Environmental / Trail Observation
-          </h1>
-        </div>
-        <p className="text-sm sm:text-base text-sand-600 leading-relaxed">
-          Report trail conditions, waste overflow, or accessibility bottlenecks to alert destination managers.
-        </p>
-      </div>
+      <PageHero
+        eyebrow="Crowdsourced telemetry"
+        eyebrowIcon={AlertTriangle}
+        title="Report a Trail Observation"
+        subtitle="Trail conditions, waste overflow and accessibility bottlenecks you flag here go to the destination managers and the incident feed."
+        pills={[
+          { icon: MapPin, label: "Filed against a destination" },
+          { icon: ShieldCheck, label: "Reviewed by rangers" },
+        ]}
+        image={heroArt(destinations, ["matheran", "munnar", "goa"], FALLBACK_ART)}
+        scriptLines={["See It", "Report It"]}
+      />
 
       <div className="bg-white rounded-3xl border border-sand-200 p-6 sm:p-8 shadow-sm space-y-6">
         

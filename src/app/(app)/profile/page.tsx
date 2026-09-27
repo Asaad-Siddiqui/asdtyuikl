@@ -9,7 +9,7 @@ export const metadata = { title: "Profile" };
 export default function TravellerProfilePage() {
   return (
     <div>
-      <div className="mx-auto max-w-3xl px-4 pt-8 sm:px-6">
+      <div className="mx-auto w-full max-w-3xl">
         <ProfileEditor />
       </div>
       <ProfilePage />

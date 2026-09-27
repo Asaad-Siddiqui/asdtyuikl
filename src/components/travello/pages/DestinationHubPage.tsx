@@ -5,10 +5,23 @@ import { useApp } from '@/components/travello/AppProvider'
 import { SustainabilityScore } from '@/components/travello/SustainabilityScore'
 import { PressureBadge } from '@/components/travello/PressureBadge'
 import { ChallengeCard } from '@/components/travello/ChallengeCard'
+import { SeniorModeToggle, useSeniorMode } from '@/components/travello/SeniorModeToggle'
+import { attractions as attractionCatalogue } from '@/lib/travello-data'
+import {
+  bestVisitWindow,
+  crowdTone,
+  lessCrowdedAlternative,
+  seniorAccessibility,
+  crowdStatus,
+  isCrowded,
+} from '@/lib/recommend'
 import { cn, getScoreColor } from '@/lib/format'
-import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, CheckCircle2, XCircle, Accessibility, Store } from 'lucide-react';export function DestinationHubPage() {
+import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, CheckCircle2, XCircle, Accessibility, Store, Users, TrendingDown, Clock } from 'lucide-react'
+
+export function DestinationHubPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { seniorMode } = useSeniorMode()
   const { destinations, challenges, businesses, completions, reports, setSelectedDestination } = useApp()
 
   const destination = destinations.find((d) => d.id === id)
@@ -26,6 +39,17 @@ import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, Check
   const destBusinesses = businesses.filter((b) => b.destinationId === id)
   const destReports = reports.filter((r) => r.destinationId === id)
 
+  const senior = seniorAccessibility(destination)
+
+  // Attractions for this destination, quieter ones first when the mode is on.
+  const destAttractions = attractionCatalogue
+    .filter((attraction) => attraction.destinationId === id)
+    .sort((a, b) =>
+      seniorMode
+        ? b.accessibilityScore - a.accessibilityScore
+        : a.crowdLevel.localeCompare(b.crowdLevel),
+    )
+
   const completedIds = completions
     .filter((c) => c.status === 'completed')
     .map((c) => c.challengeId)
@@ -42,9 +66,9 @@ import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, Check
   }
 
   return (
-    <div className="min-h-screen pb-12">
+    <div className="w-full space-y-4 sm:space-y-5">
       {/* ── Hero Banner ── */}
-      <div className={cn('relative bg-gradient-to-br text-white overflow-hidden', gradientMap[id || ''] || 'from-forest-800 to-forest-950')}>
+      <div className={cn('relative overflow-hidden rounded-2xl border border-sand-200/70 bg-gradient-to-br text-white shadow-sm', gradientMap[id || ''] || 'from-forest-800 to-forest-950')}>
         {destination.heroImageUrl && (
           <img
             src={destination.heroImageUrl}
@@ -55,7 +79,7 @@ import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, Check
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
         
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-14">
+        <div className="relative px-5 py-6 sm:px-8 sm:py-8">
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl text-white text-sm font-semibold mb-6 transition-all border border-white/15"
@@ -88,10 +112,10 @@ import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, Check
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="w-full space-y-4 sm:space-y-5">
         
         {/* ── Quick Action Bar ── */}
-        <div className="flex flex-wrap items-center gap-3 mb-10">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleStartJourney}
             className="flex items-center gap-2 px-6 py-3.5 bg-forest-700 hover:bg-forest-800 text-white rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg shadow-forest-800/20"
@@ -113,6 +137,7 @@ import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, Check
             <AlertTriangle className="w-4 h-4 text-red-500" />
             Report Issue
           </Link>
+          <SeniorModeToggle />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -207,6 +232,96 @@ import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, Check
               </div>
             </section>
 
+            {/* Attractions & Less-Crowded Alternatives */}
+            <section className="bg-white rounded-3xl border border-sand-200 p-6 sm:p-8 shadow-sm space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-forest-900">Attractions &amp; Crowd Outlook</h2>
+                  <p className="text-xs sm:text-sm text-sand-600 mt-1 leading-relaxed">
+                    Live crowd bands for each highlight, with a calmer option wherever a
+                    point gets busy.
+                  </p>
+                </div>
+                {seniorMode ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-800">
+                    <Accessibility className="w-3.5 h-3.5" /> Sorted by accessibility
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="space-y-3.5">
+                {destAttractions.map((attraction) => {
+                  const alternative = lessCrowdedAlternative(attraction, attractionCatalogue)
+                  return (
+                    <div
+                      key={attraction.id}
+                      className="rounded-2xl border border-sand-200/70 bg-sand-50/50 p-4 space-y-3"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-forest-950">{attraction.name}</p>
+                          <p className="text-xs text-sand-600 mt-0.5 leading-relaxed">
+                            {attraction.description}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] font-semibold text-sand-500">
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" /> {attraction.travelTime}
+                            </span>
+                            <span className={cn('font-black', getScoreColor(attraction.accessibilityScore))}>
+                              Accessibility {attraction.accessibilityScore}/100
+                            </span>
+                            <span>
+                              {attraction.estimatedCost > 0
+                                ? `₹${attraction.estimatedCost}`
+                                : 'Free'}
+                            </span>
+                          </div>
+                        </div>
+                        <span
+                          className={cn(
+                            'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold',
+                            crowdTone(attraction.crowdLevel)
+                          )}
+                        >
+                          <Users className="w-3.5 h-3.5" />
+                          {attraction.crowdLevel} crowd
+                        </span>
+                      </div>
+
+                      {alternative ? (
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5">
+                          <div className="flex items-start gap-2.5">
+                            <div className="w-7 h-7 shrink-0 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                              <TrendingDown className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-black text-emerald-900">
+                                Less-crowded alternative → {alternative.to.name}
+                              </p>
+                              <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
+                                {alternative.reasons[0]}
+                              </p>
+                              {alternative.reasons.length > 1 ? (
+                                <p className="text-[11px] text-emerald-800/90 mt-0.5 leading-relaxed">
+                                  {alternative.reasons[1]}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] font-semibold text-emerald-700">
+                          {isCrowded(attraction.crowdLevel)
+                            ? `No quieter option nearby yet — best time: ${bestVisitWindow(attraction.crowdLevel).toLowerCase()}.`
+                            : 'Comfortably quiet — a good pick at any time today.'}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+
             {/* Destination Challenges */}
             <section className="bg-white rounded-3xl border border-sand-200 p-6 sm:p-8 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
@@ -226,10 +341,12 @@ import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, Check
                     id={challenge.id}
                     title={challenge.title}
                     description={challenge.description}
-                    icon={challenge.icon}
+                    image={destination?.image || undefined}
+                    category={challenge.category}
                     difficulty={challenge.difficulty}
                     points={challenge.points}
                     estimatedMinutes={challenge.estimatedMinutes}
+                    destinationName={destination?.name}
                     isCompleted={completedIds.includes(challenge.id)}
                     isRecommended={i === 0}
                   />
@@ -241,7 +358,69 @@ import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, Check
 
           {/* Sidebar (4 cols) */}
           <div className="lg:col-span-4 space-y-6">
-            
+
+            {/* Senior + Accessibility verdict */}
+            <section className="bg-white rounded-3xl border border-sand-200 p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-sand-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Accessibility className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-base font-bold text-forest-900">Senior &amp; Accessibility</h3>
+                </div>
+                <span
+                  className={cn(
+                    'text-xs font-black px-2.5 py-0.5 rounded-full',
+                    senior.friendly
+                      ? 'text-emerald-700 bg-emerald-50'
+                      : 'text-amber-700 bg-amber-50'
+                  )}
+                >
+                  {senior.friendly ? 'Senior-friendly' : 'Plan with care'}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    'text-2xl font-black px-3 py-1.5 rounded-xl border bg-white shadow-2xs',
+                    getScoreColor(senior.score)
+                  )}
+                >
+                  {senior.score}
+                </span>
+                <p className="text-xs text-sand-600 leading-relaxed">
+                  Senior &amp; accessibility score out of 100, from step-free routes, walking
+                  distance, toilets, lifts and parking.
+                </p>
+              </div>
+
+              {senior.reasons.length > 0 ? (
+                <ul className="space-y-1.5">
+                  {senior.reasons.slice(0, 4).map((reason) => (
+                    <li key={reason} className="flex items-start gap-2 text-xs text-emerald-800 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      {reason}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              {senior.caution.length > 0 ? (
+                <ul className="space-y-1.5 border-t border-sand-100 pt-3">
+                  {senior.caution.slice(0, 3).map((note) => (
+                    <li key={note} className="flex items-start gap-2 text-xs text-amber-800 font-medium">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                      {note}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              <p className="text-[11px] text-blue-900 bg-blue-50/60 border border-blue-100 rounded-xl p-3 leading-relaxed font-medium">
+                Crowd outlook: <strong>{crowdStatus(destination.crowdLevel)}</strong> right now.
+                Best time to visit — {bestVisitWindow(destination.crowdLevel).toLowerCase()}.
+              </p>
+            </section>
+
             {/* Accessibility Audit */}
             <section className="bg-white rounded-3xl border border-sand-200 p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-sand-100 pb-3">

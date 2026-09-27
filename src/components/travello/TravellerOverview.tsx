@@ -4,17 +4,20 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   CalendarDays,
+  Clock,
   Compass,
   Leaf,
   MapPin,
   Plus,
   Sparkles,
   Trophy,
+  Users,
   Wallet,
   Zap,
 } from "lucide-react";
 
 import { useApp } from "@/components/travello/AppProvider";
+import { crowdAwarePicks, crowdStatus, crowdTone, type CrowdAwarePick } from "@/lib/recommend";
 import { cn } from "@/lib/format";
 
 /**
@@ -45,6 +48,8 @@ export function TravellerOverview() {
   const recommended = [...destinations]
     .sort((a, b) => b.sustainabilityScore - a.sustainabilityScore)
     .slice(0, 3);
+
+  const crowdPicks = crowdAwarePicks(destinations, 3);
 
   const kpis = [
     {
@@ -273,9 +278,69 @@ export function TravellerOverview() {
               )}
             </ul>
           </section>
+
+          {/* Feature 2: crowd-aware recommendations */}
+          <section
+            aria-labelledby="crowd-aware-heading"
+            className="rounded-3xl border border-sand-200/80 bg-white p-6 shadow-sm"
+          >
+            <h2
+              id="crowd-aware-heading"
+              className="flex items-center gap-2 text-base font-bold text-forest-950"
+            >
+              <Users className="h-4 w-4 text-amber-500" />
+              Crowd-Aware Picks
+            </h2>
+            <p className="mt-1 text-[11px] text-sand-600">
+              Ranked by how many people are there right now — with the calmest window.
+            </p>
+            <ul className="mt-4 space-y-3">
+              {crowdPicks.map((pick) => (
+                <CrowdPickRow key={pick.destination.id} pick={pick} />
+              ))}
+              {crowdPicks.length === 0 && (
+                <li className="text-xs text-sand-600">
+                  Destination crowd data loads with the catalogue.
+                </li>
+              )}
+            </ul>
+          </section>
         </div>
       </div>
     </div>
+  );
+}
+
+function CrowdPickRow({ pick }: { pick: CrowdAwarePick }) {
+  const { destination, status, bestWindow, reason } = pick;
+  return (
+    <li>
+      <Link
+        href={`/explore/${destination.id}`}
+        className="block rounded-2xl border border-sand-200/70 p-3.5 transition-colors hover:border-forest-300"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <span className="truncate text-xs font-bold text-forest-950">
+            {destination.name}
+          </span>
+          <span
+            className={cn(
+              "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black",
+              crowdTone(destination.crowdLevel),
+            )}
+          >
+            {status} · {destination.crowdLevel}
+          </span>
+        </div>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-sand-600">{reason}</p>
+        {crowdStatus(destination.crowdLevel) !== "Calm" ? (
+          <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+            <Clock className="h-3.5 w-3.5" />
+            Best window: {bestWindow}
+          </p>
+        ) : null}
+      </Link>
+    </li>
   );
 }
 

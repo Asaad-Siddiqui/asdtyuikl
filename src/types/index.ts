@@ -105,6 +105,8 @@ export interface ChallengeCompletion {
   startedAt: string
   completedAt?: string
   pointsAwarded: number
+  /** Steps completed so far, shown against the challenge's instruction count. */
+  progress: number
   evidence?: Evidence
 }
 
