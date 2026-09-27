@@ -12,6 +12,7 @@ import {
   postReactions,
   posts,
   reports,
+  rewardClaims,
   savedDestinations,
   trips,
   userChallenges,
@@ -21,6 +22,7 @@ import {
   type Destination,
 } from "@/db/schema";
 import { listBusinesses } from "@/lib/hospitality-service";
+import { GOODIES } from "@/lib/rewards";
 import type {
   Business as BusinessView,
   Challenge as ChallengeView,
@@ -561,6 +563,82 @@ export async function getPointsTimeline(userId: string, days = 30) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Eco Rewards                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Reward claims are the only reward state persisted: unlock/progress is always
+ * derived live from the points ledger and completed challenges, so it can never
+ * disagree with the rest of the app.
+ */
+export async function listRewardClaims(userId: string) {
+  const rows = await db
+    .select()
+    .from(rewardClaims)
+    .where(eq(rewardClaims.userId, userId))
+    .orderBy(desc(rewardClaims.claimedAt));
+
+  return rows.map((row) => ({
+    rewardId: row.rewardId,
+    claimedAt: row.claimedAt.toISOString(),
+  }));
+}
+
+/**
+ * Claims a goodie the traveller has unlocked. Points are achievement progress
+ * and are NOT deducted; the claim row is idempotent so double-clicks, refreshes
+ * and re-submits all resolve to the same single claim.
+ */
+export async function claimUserReward(userId: string, rewardId: string) {
+  const goodie = GOODIES.find((item) => item.id === rewardId);
+  if (!goodie) throw new TravelloError("That reward does not exist.");
+
+  const [pointsRow] = await db
+    .select({ total: sql<number>`coalesce(sum(${pointEvents.points}), 0)::int` })
+    .from(pointEvents)
+    .where(eq(pointEvents.userId, userId));
+  const points = pointsRow?.total ?? 0;
+
+  if (points < goodie.pointsRequired) {
+    throw new TravelloError(
+      `You need ${goodie.pointsRequired - points} more points to claim this reward.`,
+    );
+  }
+
+  const inserted = await db
+    .insert(rewardClaims)
+    .values({
+      userId,
+      rewardId: goodie.id,
+      rewardName: goodie.name,
+      pointsAtClaim: points,
+    })
+    .onConflictDoNothing()
+    .returning();
+
+  if (inserted[0]) {
+    return {
+      rewardId: goodie.id,
+      claimedAt: inserted[0].claimedAt.toISOString(),
+      alreadyClaimed: false,
+    };
+  }
+
+  // Already claimed earlier — return the original claim so the UI stays honest.
+  const [existing] = await db
+    .select()
+    .from(rewardClaims)
+    .where(and(eq(rewardClaims.userId, userId), eq(rewardClaims.rewardId, rewardId)))
+    .limit(1);
+
+  return {
+    rewardId: goodie.id,
+    claimedAt: (existing?.claimedAt ?? new Date()).toISOString(),
+    alreadyClaimed: true,
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Aggregate loader used by the (app) layout                           */
 /* ------------------------------------------------------------------ */
 
@@ -641,6 +719,8 @@ export type AppData = {
    * migrated yet.
    */
   businesses: BusinessView[];
+  /** Claimed eco goodies, newest first. Unlock state is derived, not stored. */
+  rewardClaims: { rewardId: string; claimedAt: string }[];
 };
 
 /**
@@ -657,7 +737,7 @@ export async function loadAppData(userId: string): Promise<AppData> {
 
   if (!account) throw new TravelloError("Your account could not be loaded.");
 
-  const [stats, destinations, challenges, completionRows, reports, posts, savedDestinationIds, tripRows] =
+  const [stats, destinations, challenges, completionRows, reports, posts, savedDestinationIds, tripRows, claims] =
     await Promise.all([
       getUserStats(userId),
       listDestinations(),
@@ -671,6 +751,15 @@ export async function loadAppData(userId: string): Promise<AppData> {
         .from(trips)
         .where(eq(trips.userId, userId))
         .orderBy(desc(trips.startDate)),
+      /**
+       * Like the hospitality tables, rewards degrade gracefully: if the
+       * reward_claims table has not been migrated yet the rest of the app —
+       * and the rewards section itself, minus claimed marks — still works.
+       */
+      listRewardClaims(userId).catch((error) => {
+        console.error("[app-data] could not load reward claims:", error);
+        return [] as { rewardId: string; claimedAt: string }[];
+      }),
     ]);
 
   /**
@@ -735,6 +824,7 @@ export async function loadAppData(userId: string): Promise<AppData> {
       status: row.status,
     })),
     businesses,
+    rewardClaims: claims,
   };
 }
 

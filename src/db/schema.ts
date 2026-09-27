@@ -666,6 +666,38 @@ export const businessFeedback = pgTable(
   ],
 );
 
+/**
+ * Eco Rewards — one row per (traveller, goodie) once claimed. Rewards are
+ * unlocked by eco-challenge points (achievement progress, never spent), so the
+ * only state we must persist is the claim itself: refreshing the page or
+ * re-running the seed must not lose or duplicate it.
+ */
+export const rewardClaims = pgTable(
+  "reward_claims",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Slug from the goodies catalogue, e.g. "tote-bag". */
+    rewardId: text("reward_id").notNull(),
+    /** Snapshot of the reward name at claim time, for auditability. */
+    rewardName: text("reward_name").notNull(),
+    /** Points total the traveller had when they claimed. Not deducted. */
+    pointsAtClaim: integer("points_at_claim").notNull().default(0),
+    claimedAt: timestamp("claimed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("reward_claims_user_reward_unique_idx").on(
+      table.userId,
+      table.rewardId,
+    ),
+    index("reward_claims_user_idx").on(table.userId),
+  ],
+);
+
 export type Business = typeof businesses.$inferSelect;
 export type BusinessAssessment = typeof businessAssessments.$inferSelect;
 export type BusinessFeedback = typeof businessFeedback.$inferSelect;
@@ -690,3 +722,4 @@ export type DietaryRequirement = typeof dietaryRequirements.$inferSelect;
 export type TravelPreference = typeof travelPreferences.$inferSelect;
 export type SpecialRequirement = typeof specialRequirements.$inferSelect;
 export type Trip = typeof trips.$inferSelect;
+export type RewardClaim = typeof rewardClaims.$inferSelect;

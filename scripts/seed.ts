@@ -121,6 +121,8 @@ type ActivitySeed = {
   posts: PostSeed[];
   reports: ReportSeed[];
   savedDestinationIds: string[];
+  /** Eco goodies to pre-claim so the demo shows the claimed state too. */
+  claimedRewardIds: string[];
   feedback: { rating: number; comment: string };
   trips: TripSeed[];
 };
@@ -237,6 +239,7 @@ const AARAV_ACTIVITY: ActivitySeed = {
     },
   ],
   savedDestinationIds: ["matheran", "munnar"],
+  claimedRewardIds: ["stickers"],
   feedback: {
     rating: 4,
     comment:
@@ -304,6 +307,7 @@ const TEST_ACTIVITY: ActivitySeed = {
     },
   ],
   savedDestinationIds: ["matheran", "munnar", "goa"],
+  claimedRewardIds: ["stickers", "tote-bag"],
   feedback: {
     rating: 5,
     comment:
@@ -355,6 +359,7 @@ async function main() {
   const { normaliseAnswers, scoreAssessment } = await import(
     "../src/lib/hospitality"
   );
+  const { GOODIES } = await import("../src/lib/rewards");
 
   const challengeIndex = new Map(challenges.map((challenge) => [challenge.id, challenge]));
 
@@ -695,8 +700,25 @@ async function main() {
         },
       });
 
+    const totalPoints = 100 + challengePointsTotal + 50 + 30;
+
+    // Eco Rewards: pre-claim some goodies so the page shows the claimed state
+    // alongside the unlocked-but-claimable and locked cards.
+    await db.delete(schema.rewardClaims).where(eq(schema.rewardClaims.userId, userId));
+    for (const rewardId of seed.claimedRewardIds) {
+      const goodie = GOODIES.find((item) => item.id === rewardId);
+      if (!goodie) continue;
+      await db.insert(schema.rewardClaims).values({
+        userId,
+        rewardId: goodie.id,
+        rewardName: goodie.name,
+        pointsAtClaim: totalPoints,
+        claimedAt: daysAgo(2),
+      });
+    }
+
     return {
-      points: 100 + challengePointsTotal + 50 + 30,
+      points: totalPoints,
       postIds,
     };
   }

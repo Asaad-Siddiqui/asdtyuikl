@@ -61,7 +61,8 @@ export default async function HomePage() {
     posts: [],
     savedDestinationIds: [],
     trips: [],
-    // The public landing page has no hospitality data to show.
+    // The public landing page has no rewards or hospitality data to show.
+    rewardClaims: [],
     businesses: [],
   };
 

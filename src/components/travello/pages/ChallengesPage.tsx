@@ -18,6 +18,7 @@ import {
 
 import { ChallengeCard } from "@/components/travello/ChallengeCard";
 import { useApp } from "@/components/travello/AppProvider";
+import { EcoRewards } from "@/components/travello/EcoRewards";
 import {
   CalloutBar,
   ChipRow,
@@ -34,6 +35,9 @@ import {
  * Filtering, difficulty and destination selection are unchanged. The tiles now
  * read only real numbers (points come from the points ledger, not a padded
  * default), and each row shows the traveller's actual step progress.
+ *
+ * Eco Rewards sits between the stats and the mission list: complete a mission
+ * → points rise → reward progress updates → claim unlocked goodies.
  */
 
 const FALLBACK_ART =
@@ -168,6 +172,12 @@ export function ChallengesPage() {
           },
         ]}
       />
+
+      {/*
+       * Your Eco Rewards — derived live from the same points and completions
+       * the tiles above show; claiming is persisted server-side.
+       */}
+      <EcoRewards />
 
       <div className="space-y-3">
         <Toolbar

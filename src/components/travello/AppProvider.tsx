@@ -26,6 +26,7 @@ import type {
   ReportView,
   TravellerStats,
 } from "@/lib/travello-service";
+import type { ClaimedReward } from "@/lib/rewards";
 
 /**
  * Client-side data layer.
@@ -54,6 +55,8 @@ export type AppState = {
   reports: ReportView[];
   posts: CommunityPostView[];
   savedDestinationIds: string[];
+  rewardClaims: ClaimedReward[];
+  claimReward: (rewardId: string) => Promise<void>;
   trips: SavedTripView[];
   selectedDestination: Destination | null;
   setSelectedDestination: (destination: Destination | null) => void;
@@ -123,6 +126,8 @@ const GUEST_STATE: AppState = {
   reports: [],
   posts: [],
   savedDestinationIds: [],
+  rewardClaims: [],
+  claimReward: async () => {},
   trips: [],
   selectedDestination: null,
   setSelectedDestination: () => {},
@@ -184,6 +189,7 @@ export function AppProvider({
   const [savedDestinationIds, setSavedDestinationIds] = useState(
     initial.savedDestinationIds,
   );
+  const [rewardClaims, setRewardClaims] = useState(initial.rewardClaims);
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(
     null,
   );
@@ -372,6 +378,36 @@ export function AppProvider({
     [notifyError],
   );
 
+  /**
+   * Claims an unlocked goodie. Optimistic: the badge flips immediately, then
+   * the server confirms. On failure the claim is rolled back and the error
+   * toast is shown, exactly like the other mutations in this provider.
+   */
+  const claimReward = useCallback(
+    async (rewardId: string) => {
+      const previousClaims = rewardClaims;
+      setRewardClaims((current) =>
+        current.some((claim) => claim.rewardId === rewardId)
+          ? current
+          : [
+              { rewardId, claimedAt: new Date().toISOString() },
+              ...current,
+            ],
+      );
+
+      try {
+        await postJson("/api/rewards/claim", { rewardId });
+        refresh();
+      } catch (cause) {
+        setRewardClaims(previousClaims);
+        notifyError(
+          cause instanceof Error ? cause.message : "Could not claim that reward.",
+        );
+      }
+    },
+    [notifyError, refresh, rewardClaims],
+  );
+
   const updateTraveller = useCallback(
     async (input: {
       name?: string;
@@ -416,6 +452,7 @@ export function AppProvider({
       reports,
       posts,
       savedDestinationIds,
+      rewardClaims,
       trips: initial.trips,
       selectedDestination,
       setSelectedDestination,
@@ -433,6 +470,7 @@ export function AppProvider({
       toggleLike,
       addComment,
       toggleSaveDestination,
+      claimReward,
       updateTraveller,
       isPending,
     };
@@ -455,6 +493,8 @@ export function AppProvider({
       toggleLike,
       addComment,
       toggleSaveDestination,
+      rewardClaims,
+      claimReward,
       updateTraveller,
       isPending,
     ]);
