@@ -137,8 +137,8 @@ export function IncidentTrendCard() {
                 <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="dashboardResolved" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                <stop offset="5%" stopColor="#00a878" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#00a878" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f2f0ea" vertical={false} />
@@ -177,7 +177,7 @@ export function IncidentTrendCard() {
               type="monotone"
               dataKey="resolved"
               name="Ranger action taken"
-              stroke="#22c55e"
+              stroke="#00a878"
               strokeWidth={2.5}
               fillOpacity={1}
               fill="url(#dashboardResolved)"

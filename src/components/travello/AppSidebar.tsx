@@ -157,29 +157,43 @@ function SidebarPanel({
     <div className="flex h-full flex-col bg-white">
       <div
         className={cn(
-          "flex items-center pt-5 pb-3",
-          collapsed ? "flex-col gap-3 px-2" : "gap-3 px-4",
+          "flex items-start pt-5 pb-3",
+          collapsed ? "flex-col items-center gap-3 px-2" : "gap-3 px-4",
         )}
       >
+        {/* The rail shows the mark alone when collapsed and the full lockup
+            when open — one supplied logo asset, two crops of it. */}
         <Link
           href="/dashboard"
           onClick={onNavigate}
-          className="group flex min-w-0 flex-1 items-center gap-3"
+          className="group flex min-w-0 flex-1 flex-col"
           aria-label="Travello dashboard"
         >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-forest-500 to-forest-700 shadow-sm shadow-forest-800/25 transition-transform duration-200 group-hover:scale-105">
-            <span className="text-base font-black text-white">T</span>
-          </span>
+          {collapsed ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/travello-mark.png"
+              alt=""
+              width={440}
+              height={328}
+              className="h-10 w-auto transition-transform duration-200 group-hover:scale-105"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/travello-logo.png"
+              alt=""
+              width={1376}
+              height={319}
+              className="h-9 w-auto max-w-full transition-transform duration-200 group-hover:scale-[1.02]"
+            />
+          )}
+          <span className="sr-only">Travello</span>
           {!collapsed && (
-            <span className="flex min-w-0 flex-col">
-              <span className="text-lg leading-none font-black tracking-tight text-forest-950">
-                Travello
-              </span>
-              <span className="mt-1.5 text-[10.5px] leading-tight font-semibold text-sand-500">
-                Travel Smarter. Leave a
-                <br />
-                Greener Footprint.
-              </span>
+            <span className="mt-2 block text-[10.5px] leading-tight font-semibold text-sand-500">
+              Travel Smarter. Leave a
+              <br />
+              Greener Footprint.
             </span>
           )}
         </Link>

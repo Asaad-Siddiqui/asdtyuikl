@@ -1,19 +1,31 @@
 /**
- * Seeds the Travello catalogue and one fully-populated demo account.
+ * Seeds the Travello catalogue and demo accounts.
  *
  * Run with:  npx tsx scripts/seed.ts
  *
- * Everything is idempotent: catalogue rows are upserted and the demo users'
+ * Everything is idempotent: catalogue rows are upserted and each demo account's
  * dependent rows are replaced, so the same numbers show up on every page after
- * re-running. One account — Aarav Mehta — tells one consistent story:
- * 4 completed challenges + welcome bonus + a resolved report + a booked trip
- * = 275 impact points, shown identically on Dashboard, Profile, Challenges,
- * Impact and Reports.
+ * re-running.
+ *
+ * Two accounts are fully populated with the demo dataset:
+ *
+ *  - **Aarav Mehta** (`aarav.mehta@example.com` / `Travello123!`) — the
+ *    documented demo account: 4 completed challenges + welcome bonus + a booked
+ *    trip + a resolved report.
+ *  - **The account you signed up with, named “test”** — matched automatically by
+ *    name/email/username containing `test` (override with `TEST_EMAIL` in
+ *    `.env.local`). It is filled with the same style of dummy data so you can
+ *    sign in with it and see every page populated: challenges, impact points,
+ *    trips, reports, saved destinations, community posts and a hospitality
+ *    rating.
+ *
+ * Rohan Iyer and Sneha Patel are light community accounts (one post each) so the
+ * feed, likes and comments have variety.
  */
 
 import { config } from "dotenv";
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { eq, ilike, or } from "drizzle-orm";
 
 config({ path: ".env.local" });
 
@@ -61,15 +73,669 @@ const SNEHA: Person = {
   role: "creator",
 };
 
+/** Shared by every activity seeder; a plain helper so fixtures can use it. */
+function daysAgo(days: number) {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
+
+type PostSeed = {
+  content: string;
+  destinationId: string;
+  challengeId: string | null;
+  daysAgo: number;
+  imageUrl: string | null;
+};
+
+type ReportSeed = {
+  destinationId: string;
+  category: string;
+  description: string;
+  status: string;
+  priority: string;
+  daysAgo: number;
+};
+
+type TripSeed = {
+  from: string;
+  to: string;
+  startDate: string;
+  endDate: string;
+  nights: number;
+  days: number;
+  adults: number;
+  elderly: number;
+  budget: number;
+  transportPreference: string;
+  transportMode: string;
+  transportLabel: string;
+  stayName: string;
+  stayType: string;
+  costPerNight: number;
+  dataSource: "prototype";
+  createdAt: Date;
+};
+
+type ActivitySeed = {
+  completedChallengeIds: string[];
+  inProgressChallengeIds: string[];
+  posts: PostSeed[];
+  reports: ReportSeed[];
+  savedDestinationIds: string[];
+  feedback: { rating: number; comment: string };
+  trips: TripSeed[];
+};
+
+const TRIP_SEEDS: TripSeed[] = [
+  {
+    from: "Mumbai",
+    to: "Mahabaleshwar",
+    startDate: "2026-10-12",
+    endDate: "2026-10-15",
+    nights: 3,
+    days: 4,
+    adults: 2,
+    elderly: 1,
+    budget: 15000,
+    transportPreference: "public_transport",
+    transportMode: "train",
+    transportLabel: "Train to Pune, then shared coach",
+    stayName: "Mahabaleshwar Green Stay",
+    stayType: "Lower-impact guesthouse",
+    costPerNight: 1800,
+    dataSource: "prototype",
+    createdAt: daysAgo(5),
+  },
+  {
+    from: "Mumbai",
+    to: "Matheran",
+    startDate: "2026-07-04",
+    endDate: "2026-07-06",
+    nights: 2,
+    days: 3,
+    adults: 2,
+    elderly: 1,
+    budget: 9000,
+    transportPreference: "public_transport",
+    transportMode: "train",
+    transportLabel: "Toy train from Neral",
+    stayName: "Charlotte Lake Eco Cottage",
+    stayType: "Heritage eco-stay",
+    costPerNight: 1500,
+    dataSource: "prototype",
+    createdAt: daysAgo(45),
+  },
+  {
+    from: "Mumbai",
+    to: "Goa",
+    startDate: "2026-12-20",
+    endDate: "2026-12-24",
+    nights: 4,
+    days: 5,
+    adults: 2,
+    elderly: 1,
+    budget: 32000,
+    transportPreference: "public_transport",
+    transportMode: "train",
+    transportLabel: "Overnight Konkan railway",
+    stayName: "Palolem Beach Accessible Huts",
+    stayType: "Beach hut eco-stay",
+    costPerNight: 2600,
+    dataSource: "prototype",
+    createdAt: daysAgo(2),
+  },
+];
+
+const AARAV_ACTIVITY: ActivitySeed = {
+  completedChallengeIds: ["ch-matheran-1", "ch-matheran-2", "ch-goa-1", "ch-goa-2"],
+  inProgressChallengeIds: ["ch-matheran-5", "ch-manali-1"],
+  posts: [
+    {
+      content:
+        "Completed the “Use Public Transport” eco challenge today! The toy train from Neral to Matheran is still the most beautiful way to arrive without a car. 🌱",
+      destinationId: "matheran",
+      challengeId: "ch-matheran-1",
+      daysAgo: 3,
+      imageUrl:
+        "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&h=700&fit=crop&auto=format",
+    },
+    {
+      content:
+        "Refilled my bottle six times on the Charlotte Lake trail — no single-use plastic for the whole trip. Small habit, big difference.",
+      destinationId: "matheran",
+      challengeId: "ch-matheran-2",
+      daysAgo: 7,
+      imageUrl: null,
+    },
+  ],
+  reports: [
+    {
+      destinationId: "matheran",
+      category: "accessibility",
+      description:
+        "The ramp near the Matheran market taxi stand has a broken handrail — difficult to use with a wheelchair.",
+      status: "resolved",
+      priority: "high",
+      daysAgo: 9,
+    },
+    {
+      destinationId: "goa",
+      category: "waste",
+      description:
+        "Overflowing bins along the Palolem beach approach road. Reported to the local panchayat.",
+      status: "under_review",
+      priority: "medium",
+      daysAgo: 4,
+    },
+    {
+      destinationId: "matheran",
+      category: "infrastructure",
+      description:
+        "Charlotte Lake trail marker missing after the monsoon, easy to take the wrong fork.",
+      status: "submitted",
+      priority: "low",
+      daysAgo: 1,
+    },
+  ],
+  savedDestinationIds: ["matheran", "munnar"],
+  feedback: {
+    rating: 4,
+    comment:
+      "Step-free ground floor worked well for my parents. Would like to see EV charging added.",
+  },
+  trips: TRIP_SEEDS,
+};
+
+const TEST_ACTIVITY: ActivitySeed = {
+  completedChallengeIds: [
+    "ch-matheran-1",
+    "ch-matheran-2",
+    "ch-matheran-3",
+    "ch-goa-1",
+    "ch-goa-2",
+    "ch-manali-1",
+  ],
+  inProgressChallengeIds: ["ch-matheran-4", "ch-matheran-5"],
+  posts: [
+    {
+      content:
+        "Six eco challenges done this season — the toy train up to Matheran and the Goa beach cleanup were the highlights. 🌱",
+      destinationId: "matheran",
+      challengeId: "ch-matheran-1",
+      daysAgo: 4,
+      imageUrl:
+        "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&h=700&fit=crop&auto=format",
+    },
+    {
+      content:
+        "Bought a handmade souvenir straight from a Matheran artisan — every rupee stayed in the village.",
+      destinationId: "matheran",
+      challengeId: "ch-matheran-3",
+      daysAgo: 8,
+      imageUrl: null,
+    },
+  ],
+  reports: [
+    {
+      destinationId: "matheran",
+      category: "accessibility",
+      description:
+        "The boardwalk near the market has a steep unmarked step that is hard to manage with a walker.",
+      status: "resolved",
+      priority: "high",
+      daysAgo: 11,
+    },
+    {
+      destinationId: "munnar",
+      category: "waste",
+      description:
+        "Plastic wrappers collecting along the viewpoint trail off the Munnar tea estate road.",
+      status: "under_review",
+      priority: "medium",
+      daysAgo: 6,
+    },
+    {
+      destinationId: "goa",
+      category: "water",
+      description:
+        "No refill point near the Palolem beach entrance — visitors are buying bottled water.",
+      status: "submitted",
+      priority: "low",
+      daysAgo: 2,
+    },
+  ],
+  savedDestinationIds: ["matheran", "munnar", "goa"],
+  feedback: {
+    rating: 5,
+    comment:
+      "Genuinely plastic-free and the kitchen garden was used every morning. Would stay again.",
+  },
+  trips: TRIP_SEEDS,
+};
+
+const ROHAN_POSTS: PostSeed[] = [
+  {
+    content:
+      "South Goa's Divar Island ferry is genuinely wheelchair roll-on. Quiet roads, baroque churches, almost no traffic.",
+    destinationId: "goa",
+    challengeId: null,
+    daysAgo: 2,
+    imageUrl:
+      "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=1200&h=700&fit=crop&auto=format",
+  },
+];
+
+const SNEHA_POSTS: PostSeed[] = [
+  {
+    content:
+      "Eravikulam's Rajamalai base trail is paved and step-free — one of the most accessible national park walks I've filmed in Kerala.",
+    destinationId: "munnar",
+    challengeId: null,
+    daysAgo: 1,
+    imageUrl:
+      "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=1200&h=700&fit=crop&auto=format",
+  },
+];
+
+const COMMENT_TEXTS = [
+  "That toy train ride is unbeatable. Did you get the window seats?",
+  "Adding this to my accessible-trails list — thanks for the detail!",
+  "Good to know the access is this good. Adding it to my list.",
+  "Love that you kept the whole trip plastic-free.",
+];
+
 async function main() {
   const { db } = await import("../src/db");
   const schema = await import("../src/db/schema");
-  const { destinations, attractions, challenges } = await import(
+  const { destinations, attractions, challenges, businesses } = await import(
     "../src/lib/travello-data"
   );
   const { normalizeOption, buildAssumptions } = await import(
     "../src/lib/trip-schema"
   );
+  const { normaliseAnswers, scoreAssessment } = await import(
+    "../src/lib/hospitality"
+  );
+
+  const challengeIndex = new Map(challenges.map((challenge) => [challenge.id, challenge]));
+
+  /* ---------------------------------------------------------------- */
+  /* Nested helpers (kept inside `main` so every type is inferred)    */
+  /* ---------------------------------------------------------------- */
+
+  /** Creates or refreshes one named demo account and returns its id. */
+  async function ensureUser(person: Person): Promise<string> {
+    const existing = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, person.email))
+      .limit(1);
+
+    if (existing[0]) {
+      await db
+        .update(schema.users)
+        .set({
+          name: person.name,
+          passwordHash: await bcrypt.hash(DEMO_PASSWORD, 10),
+          username: person.username,
+          bio: person.bio,
+          avatarUrl: person.avatar,
+          role: person.role,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.users.id, existing[0].id));
+      return existing[0].id;
+    }
+
+    const inserted = await db
+      .insert(schema.users)
+      .values({
+        name: person.name,
+        email: person.email,
+        passwordHash: await bcrypt.hash(DEMO_PASSWORD, 10),
+        username: person.username,
+        bio: person.bio,
+        avatarUrl: person.avatar,
+        role: person.role,
+      })
+      .returning();
+    return inserted[0].id;
+  }
+
+  /**
+   * Finds the account the user created by hand (named “test”). Matches on
+   * name/email/username, preferring an exact name match; `TEST_EMAIL` in
+   * `.env.local` overrides the search.
+   */
+  async function findTestAccount() {
+    const override = process.env.TEST_EMAIL?.trim();
+    const rows = override
+      ? await db
+          .select()
+          .from(schema.users)
+          .where(eq(schema.users.email, override))
+          .limit(1)
+      : await db
+          .select()
+          .from(schema.users)
+          .where(
+            or(
+              ilike(schema.users.name, "%test%"),
+              ilike(schema.users.email, "%test%"),
+              ilike(schema.users.username, "%test%"),
+            ),
+          );
+
+    if (rows.length === 0) return null;
+    const exact = rows.find(
+      (row) => (row.name ?? "").trim().toLowerCase() === "test",
+    );
+    return exact ?? rows[0];
+  }
+
+  /** Inserts a user's community posts and returns their new ids. */
+  async function seedUserPosts(userId: string, posts: PostSeed[]) {
+    const ids: string[] = [];
+    for (const post of posts) {
+      const [row] = await db
+        .insert(schema.posts)
+        .values({
+          userId,
+          content: post.content,
+          imageUrl: post.imageUrl,
+          destinationId: post.destinationId,
+          challengeId: post.challengeId,
+          createdAt: daysAgo(post.daysAgo),
+        })
+        .returning();
+      ids.push(row.id);
+    }
+    return ids;
+  }
+
+  /** Fills one account with the complete dummy dataset. */
+  async function seedActivity(userId: string, seed: ActivitySeed) {
+    // Replace this account's activity so re-running is deterministic.
+    await db.delete(schema.userChallenges).where(eq(schema.userChallenges.userId, userId));
+    await db.delete(schema.pointEvents).where(eq(schema.pointEvents.userId, userId));
+    await db.delete(schema.posts).where(eq(schema.posts.userId, userId));
+    await db.delete(schema.savedDestinations).where(eq(schema.savedDestinations.userId, userId));
+    await db.delete(schema.reports).where(eq(schema.reports.userId, userId));
+    await db.delete(schema.trips).where(eq(schema.trips.userId, userId));
+    await db.delete(schema.postReactions).where(eq(schema.postReactions.userId, userId));
+
+    // Accessibility profile.
+    await db
+      .delete(schema.accessibilityProfiles)
+      .where(eq(schema.accessibilityProfiles.userId, userId));
+
+    const [profile] = await db
+      .insert(schema.accessibilityProfiles)
+      .values({
+        userId,
+        completed: true,
+        mobilityDetail:
+          "Travelling with my parents, who need regular rest stops and step-free access.",
+        dietaryDetail: "Vegetarian household.",
+      })
+      .returning();
+
+    await db.insert(schema.travelerTypes).values([
+      { profileId: profile.id, type: "adults" },
+      { profileId: profile.id, type: "elderly" },
+    ]);
+
+    await db.insert(schema.accessibilityRequirements).values([
+      { profileId: profile.id, category: "mobility", requirement: "step_free_routes" },
+      { profileId: profile.id, category: "mobility", requirement: "minimal_walking" },
+      { profileId: profile.id, category: "mobility", requirement: "elevator" },
+      { profileId: profile.id, category: "mobility", requirement: "rest_areas" },
+    ]);
+
+    await db.insert(schema.dietaryRequirements).values([
+      { profileId: profile.id, requirement: "vegetarian" },
+      { profileId: profile.id, requirement: "local_only" },
+    ]);
+
+    await db.insert(schema.travelPreferences).values({
+      profileId: profile.id,
+      sustainabilityWeight: 80,
+      accessibilityWeight: 90,
+      budgetWeight: 55,
+      timeWeight: 45,
+      comfortWeight: 65,
+    });
+
+    await db.insert(schema.specialRequirements).values({
+      profileId: profile.id,
+      content: "Prefers quiet stays and early starts; avoid long stairs.",
+    });
+
+    // Challenges and points.
+    const completed = seed.completedChallengeIds
+      .map((id) => challengeIndex.get(id))
+      .filter((challenge): challenge is NonNullable<typeof challenge> => Boolean(challenge));
+
+    for (const [index, challenge] of completed.entries()) {
+      await db.insert(schema.userChallenges).values({
+        userId,
+        challengeId: challenge.id,
+        status: "completed",
+        progress: challenge.instructions.length,
+        pointsAwarded: challenge.points,
+        startedAt: daysAgo(20 - index * 2),
+        completedAt: daysAgo(18 - index * 2),
+      });
+
+      await db.insert(schema.pointEvents).values({
+        userId,
+        points: challenge.points,
+        source: "challenge",
+        label: `Completed “${challenge.title}”`,
+        refId: challenge.id,
+        createdAt: daysAgo(18 - index * 2),
+      });
+    }
+
+    for (const [index, challengeId] of seed.inProgressChallengeIds.entries()) {
+      await db.insert(schema.userChallenges).values({
+        userId,
+        challengeId,
+        status: "in_progress",
+        progress: 2,
+        pointsAwarded: 0,
+        startedAt: daysAgo(6 - index),
+      });
+    }
+
+    const challengePointsTotal = completed.reduce(
+      (sum, challenge) => sum + challenge.points,
+      0,
+    );
+
+    await db.insert(schema.pointEvents).values([
+      {
+        userId,
+        points: 100,
+        source: "welcome",
+        label: "Welcome to Travello",
+        createdAt: daysAgo(30),
+      },
+      {
+        userId,
+        points: 50,
+        source: "trip",
+        label: "Booked a lower-impact trip to Matheran",
+        refId: "seed-trip-matheran",
+        createdAt: daysAgo(12),
+      },
+      {
+        userId,
+        points: 30,
+        source: "bonus",
+        label: "Community report resolved",
+        createdAt: daysAgo(4),
+      },
+    ]);
+
+    // Confirmed trips (full itinerary JSON so the trip detail page renders).
+    for (const seedTrip of seed.trips) {
+      const request: TripRequestSummary = {
+        from: seedTrip.from,
+        to: seedTrip.to,
+        startDate: seedTrip.startDate,
+        endDate: seedTrip.endDate,
+        adults: seedTrip.adults,
+        children: 0,
+        elderly: seedTrip.elderly,
+        mobilitySupport: 1,
+        budget: seedTrip.budget,
+        transportPreference: seedTrip.transportPreference,
+        priorities: ["accessible", "low_impact"],
+        additionalPreferences: "",
+        tripNeeds: ["minimal_walking", "frequent_rest_stops"],
+        nights: seedTrip.nights,
+        days: seedTrip.days,
+        travelers: seedTrip.adults + seedTrip.elderly,
+      };
+
+      const raw = buildRawOption(seedTrip, request);
+      const option = normalizeOption(raw, 0, request, seedTrip.dataSource);
+      const assumptions = buildAssumptions(raw, request);
+
+      await db.insert(schema.trips).values({
+        userId,
+        title: `${seedTrip.from} → ${seedTrip.to}`,
+        fromLocation: seedTrip.from,
+        toLocation: seedTrip.to,
+        startDate: seedTrip.startDate,
+        endDate: seedTrip.endDate,
+        adults: seedTrip.adults,
+        children: 0,
+        elderly: seedTrip.elderly,
+        mobilitySupport: 1,
+        budget: seedTrip.budget,
+        transportPreference: seedTrip.transportPreference,
+        priorities: request.priorities,
+        additionalPreferences: "",
+        tripNeeds: request.tripNeeds,
+        selectedOption: option.optionId,
+        status: "confirmed",
+        totalCost: option.summary.cost,
+        estimatedCo2: option.summary.co2Kg,
+        accessibilityScore: option.summary.accessibilityScore,
+        sustainabilityScore: option.summary.sustainabilityScore,
+        dataSource: "prototype",
+        engine: "prototype",
+        itineraryJson: option,
+        rawItineraryJson: { engine: "prototype", option: raw },
+        assumptions,
+        profileSnapshot: {
+          completed: true,
+          travelerTypes: ["adults", "elderly"],
+          mobility: ["step_free_routes", "minimal_walking", "elevator", "rest_areas"],
+          visual: [],
+          hearing: [],
+          dietary: ["vegetarian", "local_only"],
+          mobilityDetail: "Needs regular rest stops and step-free access.",
+          dietaryDetail: "Vegetarian household.",
+          specialRequirement: "Prefers quiet stays and early starts.",
+          priorities: {
+            sustainability: 80,
+            accessibility: 90,
+            budget: 55,
+            time: 45,
+            comfort: 65,
+          },
+        },
+        createdAt: seedTrip.createdAt,
+        updatedAt: seedTrip.createdAt,
+      });
+    }
+
+    // Incident reports.
+    await db.insert(schema.reports).values(
+      seed.reports.map((report) => ({
+        userId,
+        destinationId: report.destinationId,
+        category: report.category,
+        description: report.description,
+        status: report.status,
+        priority: report.priority,
+        createdAt: daysAgo(report.daysAgo),
+      })),
+    );
+
+    // Saved destinations.
+    await db
+      .insert(schema.savedDestinations)
+      .values(
+        seed.savedDestinationIds.map((destinationId) => ({ userId, destinationId })),
+      )
+      .onConflictDoNothing();
+
+    // Community posts.
+    const postIds = await seedUserPosts(userId, seed.posts);
+
+    // A traveller rating on the demo hospitality business.
+    await db
+      .insert(schema.businessFeedback)
+      .values({
+        businessId: "biz-6",
+        userId,
+        rating: seed.feedback.rating,
+        comment: seed.feedback.comment,
+        createdAt: daysAgo(3),
+      })
+      .onConflictDoUpdate({
+        target: [schema.businessFeedback.businessId, schema.businessFeedback.userId],
+        set: {
+          rating: seed.feedback.rating,
+          comment: seed.feedback.comment,
+          updatedAt: new Date(),
+        },
+      });
+
+    return {
+      points: 100 + challengePointsTotal + 50 + 30,
+      postIds,
+    };
+  }
+
+  /** Cross-likes and comments so the community feed looks alive for every account. */
+  async function seedInteractions(postIdsByUser: Record<string, string[]>) {
+    const owners = Object.entries(postIdsByUser);
+    let commentSlot = 0;
+
+    for (const [ownerId, postIds] of owners) {
+      for (const postId of postIds.slice(0, 2)) {
+        for (const [otherId] of owners) {
+          if (otherId === ownerId) continue;
+          await db
+            .insert(schema.postReactions)
+            .values({ postId, userId: otherId, reactionType: "like" })
+            .onConflictDoNothing();
+        }
+      }
+
+      const firstPost = postIds[0];
+      if (!firstPost) continue;
+
+      for (const [commenterId] of owners) {
+        if (commenterId === ownerId) continue;
+        await db.insert(schema.comments).values({
+          postId: firstPost,
+          userId: commenterId,
+          content: COMMENT_TEXTS[commentSlot % COMMENT_TEXTS.length],
+          createdAt: daysAgo(1),
+        });
+        commentSlot += 1;
+      }
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Catalogue                                                         */
+  /* ---------------------------------------------------------------- */
 
   console.log("→ Seeding catalogue…");
 
@@ -166,489 +832,69 @@ async function main() {
       });
   }
 
+  /* ---------------------------------------------------------------- */
+  /* Accounts                                                          */
+  /* ---------------------------------------------------------------- */
+
   console.log("→ Seeding demo accounts…");
 
-  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
-  const people = [AARAV, ROHAN, SNEHA];
-  const ids: Record<string, string> = {};
+  const aaravId = await ensureUser(AARAV);
+  const rohanId = await ensureUser(ROHAN);
+  const snehaId = await ensureUser(SNEHA);
 
-  for (const person of people) {
-    const existing = await db
-      .select()
-      .from(schema.users)
-      .where(eq(schema.users.email, person.email))
-      .limit(1);
-
-    if (existing[0]) {
-      await db
-        .update(schema.users)
-        .set({
-          name: person.name,
-          passwordHash,
-          username: person.username,
-          bio: person.bio,
-          avatarUrl: person.avatar,
-          role: person.role,
-          updatedAt: new Date(),
-        })
-        .where(eq(schema.users.id, existing[0].id));
-      ids[person.email] = existing[0].id;
-    } else {
-      const inserted = await db
-        .insert(schema.users)
-        .values({
-          name: person.name,
-          email: person.email,
-          passwordHash,
-          username: person.username,
-          bio: person.bio,
-          avatarUrl: person.avatar,
-          role: person.role,
-        })
-        .returning();
-      ids[person.email] = inserted[0].id;
-    }
+  const testAccount = await findTestAccount();
+  if (testAccount) {
+    console.log(
+      `   Found the account to fill: “${testAccount.name}” <${testAccount.email}>`,
+    );
+  } else {
+    console.warn(
+      "   No account matching “test” found — skipping it. Sign up with a name like",
+    );
+    console.warn(
+      "   “test”, or set TEST_EMAIL in .env.local to its email, then re-run.",
+    );
   }
 
-  const aaravId = ids[AARAV.email];
-  const rohanId = ids[ROHAN.email];
-  const snehaId = ids[SNEHA.email];
+  /* ---------------------------------------------------------------- */
+  /* Activity                                                          */
+  /* ---------------------------------------------------------------- */
 
-  // Clear Aarav's activity so the seed is deterministic on re-run. Scoped to
-  // this account only — we never touch other users' data.
-  await db.delete(schema.userChallenges).where(eq(schema.userChallenges.userId, aaravId));
-  await db.delete(schema.pointEvents).where(eq(schema.pointEvents.userId, aaravId));
-  await db.delete(schema.posts).where(eq(schema.posts.userId, aaravId));
-  await db.delete(schema.savedDestinations).where(eq(schema.savedDestinations.userId, aaravId));
-  await db.delete(schema.reports).where(eq(schema.reports.userId, aaravId));
-  await db.delete(schema.trips).where(eq(schema.trips.userId, aaravId));
-  await db.delete(schema.postReactions).where(eq(schema.postReactions.userId, aaravId));
-
-  console.log("→ Seeding Aarav's accessibility profile…");
-
-  await db
-    .delete(schema.accessibilityProfiles)
-    .where(eq(schema.accessibilityProfiles.userId, aaravId));
-
-  const [profile] = await db
-    .insert(schema.accessibilityProfiles)
-    .values({
-      userId: aaravId,
-      completed: true,
-      mobilityDetail:
-        "Travelling with my parents, who need regular rest stops and step-free access.",
-      dietaryDetail: "Vegetarian household.",
-    })
-    .returning();
-
-  await db.insert(schema.travelerTypes).values([
-    { profileId: profile.id, type: "adults" },
-    { profileId: profile.id, type: "elderly" },
-  ]);
-
-  await db.insert(schema.accessibilityRequirements).values([
-    { profileId: profile.id, category: "mobility", requirement: "step_free_routes" },
-    { profileId: profile.id, category: "mobility", requirement: "minimal_walking" },
-    { profileId: profile.id, category: "mobility", requirement: "elevator" },
-    { profileId: profile.id, category: "mobility", requirement: "rest_areas" },
-  ]);
-
-  await db.insert(schema.dietaryRequirements).values([
-    { profileId: profile.id, requirement: "vegetarian" },
-    { profileId: profile.id, requirement: "local_only" },
-  ]);
-
-  await db.insert(schema.travelPreferences).values({
-    profileId: profile.id,
-    sustainabilityWeight: 80,
-    accessibilityWeight: 90,
-    budgetWeight: 55,
-    timeWeight: 45,
-    comfortWeight: 65,
-  });
-
-  await db.insert(schema.specialRequirements).values({
-    profileId: profile.id,
-    content: "Prefers quiet stays and early starts; avoid long stairs.",
-  });
-
-  console.log("→ Seeding challenges, points and impact…");
-
-  const completedChallenges = [
-    { id: "ch-matheran-1", label: "Waste-Free Trail", points: 25 },
-    { id: "ch-matheran-2", label: "Refill Champion", points: 20 },
-    { id: "ch-goa-1", label: "Beach Cleanup Warrior", points: 30 },
-    { id: "ch-goa-2", label: "Local Food Explorer", points: 20 },
-  ];
-  const inProgressChallenges = ["ch-matheran-5", "ch-manali-1"];
-
-  const daysAgo = (days: number) =>
-    new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-
-  for (const [index, challenge] of completedChallenges.entries()) {
-    await db.insert(schema.userChallenges).values({
-      userId: aaravId,
-      challengeId: challenge.id,
-      status: "completed",
-      progress: 1,
-      pointsAwarded: challenge.points,
-      startedAt: daysAgo(20 - index * 3),
-      completedAt: daysAgo(18 - index * 3),
-    });
-
-    await db.insert(schema.pointEvents).values({
-      userId: aaravId,
-      points: challenge.points,
-      source: "challenge",
-      label: `Completed “${challenge.label}”`,
-      refId: challenge.id,
-      createdAt: daysAgo(18 - index * 3),
-    });
-  }
-
-  for (const [index, challengeId] of inProgressChallenges.entries()) {
-    await db.insert(schema.userChallenges).values({
-      userId: aaravId,
-      challengeId,
-      status: "in_progress",
-      progress: 2,
-      pointsAwarded: 0,
-      startedAt: daysAgo(6 - index),
-    });
-  }
-
-  const challengePointsTotal = completedChallenges.reduce(
-    (sum, challenge) => sum + challenge.points,
-    0,
-  );
-
-  await db.insert(schema.pointEvents).values([
-    {
-      userId: aaravId,
-      points: 100,
-      source: "welcome",
-      label: "Welcome to Travello",
-      createdAt: daysAgo(30),
-    },
-    {
-      userId: aaravId,
-      points: 50,
-      source: "trip",
-      label: "Booked a lower-impact trip to Matheran",
-      refId: "seed-trip-matheran",
-      createdAt: daysAgo(12),
-    },
-    {
-      userId: aaravId,
-      points: 30,
-      source: "bonus",
-      label: "Community report resolved",
-      createdAt: daysAgo(4),
-    },
-  ]);
-
-  const totalPoints = 100 + challengePointsTotal + 50 + 30;
+  console.log("→ Seeding Aarav's activity…");
+  const aaravResult = await seedActivity(aaravId, AARAV_ACTIVITY);
   console.log(
-    `   Aarav total = 100 welcome + ${challengePointsTotal} challenges + 50 trip + 30 bonus = ${totalPoints} pts`,
+    `   Aarav total = 100 welcome + challenges + 50 trip + 30 bonus = ${aaravResult.points} pts`,
   );
 
-  console.log("→ Seeding trips…");
+  // Rohan and Sneha keep light, community-only rows (one post each).
+  await db.delete(schema.posts).where(eq(schema.posts.userId, rohanId));
+  await db.delete(schema.posts).where(eq(schema.posts.userId, snehaId));
+  const rohanPostIds = await seedUserPosts(rohanId, ROHAN_POSTS);
+  const snehaPostIds = await seedUserPosts(snehaId, SNEHA_POSTS);
 
-  const tripSeeds: {
-    from: string;
-    to: string;
-    startDate: string;
-    endDate: string;
-    nights: number;
-    days: number;
-    adults: number;
-    elderly: number;
-    budget: number;
-    transportPreference: string;
-    transportMode: string;
-    transportLabel: string;
-    stayName: string;
-    stayType: string;
-    costPerNight: number;
-    dataSource: "prototype";
-    createdAt: Date;
-  }[] = [
-    {
-      from: "Mumbai",
-      to: "Mahabaleshwar",
-      startDate: "2026-10-12",
-      endDate: "2026-10-15",
-      nights: 3,
-      days: 4,
-      adults: 2,
-      elderly: 1,
-      budget: 15000,
-      transportPreference: "public_transport",
-      transportMode: "train",
-      transportLabel: "Train to Pune, then shared coach",
-      stayName: "Mahabaleshwar Green Stay",
-      stayType: "Lower-impact guesthouse",
-      costPerNight: 1800,
-      dataSource: "prototype",
-      createdAt: daysAgo(5),
-    },
-    {
-      from: "Mumbai",
-      to: "Matheran",
-      startDate: "2026-07-04",
-      endDate: "2026-07-06",
-      nights: 2,
-      days: 3,
-      adults: 2,
-      elderly: 1,
-      budget: 9000,
-      transportPreference: "public_transport",
-      transportMode: "train",
-      transportLabel: "Toy train from Neral",
-      stayName: "Charlotte Lake Eco Cottage",
-      stayType: "Heritage eco-stay",
-      costPerNight: 1500,
-      dataSource: "prototype",
-      createdAt: daysAgo(45),
-    },
-    {
-      from: "Mumbai",
-      to: "Goa",
-      startDate: "2026-12-20",
-      endDate: "2026-12-24",
-      nights: 4,
-      days: 5,
-      adults: 2,
-      elderly: 1,
-      budget: 32000,
-      transportPreference: "public_transport",
-      transportMode: "train",
-      transportLabel: "Overnight Konkan railway",
-      stayName: "Palolem Beach Accessible Huts",
-      stayType: "Beach hut eco-stay",
-      costPerNight: 2600,
-      dataSource: "prototype",
-      createdAt: daysAgo(2),
-    },
-  ];
+  const postIdsByUser: Record<string, string[]> = {
+    [aaravId]: aaravResult.postIds,
+    [rohanId]: rohanPostIds,
+    [snehaId]: snehaPostIds,
+  };
 
-  for (const seed of tripSeeds) {
-    const request: TripRequestSummary = {
-      from: seed.from,
-      to: seed.to,
-      startDate: seed.startDate,
-      endDate: seed.endDate,
-      adults: seed.adults,
-      children: 0,
-      elderly: seed.elderly,
-      mobilitySupport: 1,
-      budget: seed.budget,
-      transportPreference: seed.transportPreference,
-      priorities: ["accessible", "low_impact"],
-      additionalPreferences: "",
-      tripNeeds: ["minimal_walking", "frequent_rest_stops"],
-      nights: seed.nights,
-      days: seed.days,
-      travelers: seed.adults + seed.elderly,
-    };
-
-    const raw = buildRawOption(seed, request);
-    const option = normalizeOption(raw, 0, request, seed.dataSource);
-    const assumptions = buildAssumptions(raw, request);
-
-    await db.insert(schema.trips).values({
-      userId: aaravId,
-      title: `${seed.from} → ${seed.to}`,
-      fromLocation: seed.from,
-      toLocation: seed.to,
-      startDate: seed.startDate,
-      endDate: seed.endDate,
-      adults: seed.adults,
-      children: 0,
-      elderly: seed.elderly,
-      mobilitySupport: 1,
-      budget: seed.budget,
-      transportPreference: seed.transportPreference,
-      priorities: request.priorities,
-      additionalPreferences: "",
-      tripNeeds: request.tripNeeds,
-      selectedOption: option.optionId,
-      status: "confirmed",
-      totalCost: option.summary.cost,
-      estimatedCo2: option.summary.co2Kg,
-      accessibilityScore: option.summary.accessibilityScore,
-      sustainabilityScore: option.summary.sustainabilityScore,
-      dataSource: "prototype",
-      engine: "prototype",
-      itineraryJson: option,
-      rawItineraryJson: { engine: "prototype", option: raw },
-      assumptions,
-      profileSnapshot: {
-        completed: true,
-        travelerTypes: ["adults", "elderly"],
-        mobility: ["step_free_routes", "minimal_walking", "elevator", "rest_areas"],
-        visual: [],
-        hearing: [],
-        dietary: ["vegetarian", "local_only"],
-        mobilityDetail: "Needs regular rest stops and step-free access.",
-        dietaryDetail: "Vegetarian household.",
-        specialRequirement: "Prefers quiet stays and early starts.",
-        priorities: {
-          sustainability: 80,
-          accessibility: 90,
-          budget: 55,
-          time: 45,
-          comfort: 65,
-        },
-      },
-      createdAt: seed.createdAt,
-      updatedAt: seed.createdAt,
-    });
+  if (testAccount) {
+    console.log("→ Seeding the “test” account's activity…");
+    const testResult = await seedActivity(testAccount.id, TEST_ACTIVITY);
+    postIdsByUser[testAccount.id] = testResult.postIds;
+    console.log(
+      `   test total = 100 welcome + challenges + 50 trip + 30 bonus = ${testResult.points} pts`,
+    );
   }
 
-  console.log("→ Seeding reports and community…");
+  console.log("→ Seeding community interactions…");
+  await seedInteractions(postIdsByUser);
 
-  await db.insert(schema.reports).values([
-    {
-      userId: aaravId,
-      destinationId: "matheran",
-      category: "accessibility",
-      description:
-        "The ramp near the Matheran market taxi stand has a broken handrail — difficult to use with a wheelchair.",
-      status: "resolved",
-      priority: "high",
-      createdAt: daysAgo(9),
-    },
-    {
-      userId: aaravId,
-      destinationId: "goa",
-      category: "waste",
-      description:
-        "Overflowing bins along the Palolem beach approach road. Reported to the local panchayat.",
-      status: "under_review",
-      priority: "medium",
-      createdAt: daysAgo(4),
-    },
-    {
-      userId: aaravId,
-      destinationId: "matheran",
-      category: "infrastructure",
-      description:
-        "Charlotte Lake trail marker missing after the monsoon, easy to take the wrong fork.",
-      status: "submitted",
-      priority: "low",
-      createdAt: daysAgo(1),
-    },
-  ]);
-
-  const postSeeds = [
-    {
-      userId: aaravId,
-      content:
-        "Completed the “Use Public Transport” eco challenge today! The toy train from Neral to Matheran is still the most beautiful way to arrive without a car. 🌱",
-      destinationId: "matheran",
-      challengeId: "ch-matheran-1",
-      daysAgo: 3,
-      imageUrl:
-        "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&h=700&fit=crop&auto=format",
-    },
-    {
-      userId: aaravId,
-      content:
-        "Refilled my bottle six times on the Charlotte Lake trail — no single-use plastic for the whole trip. Small habit, big difference.",
-      destinationId: "matheran",
-      challengeId: "ch-matheran-2",
-      daysAgo: 7,
-      imageUrl: null,
-    },
-    {
-      userId: rohanId,
-      content:
-        "South Goa's Divar Island ferry is genuinely wheelchair roll-on. Quiet roads, baroque churches, almost no traffic.",
-      destinationId: "goa",
-      challengeId: null,
-      daysAgo: 2,
-      imageUrl:
-        "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=1200&h=700&fit=crop&auto=format",
-    },
-    {
-      userId: snehaId,
-      content:
-        "Eravikulam's Rajamalai base trail is paved and step-free — one of the most accessible national park walks I've filmed in Kerala.",
-      destinationId: "munnar",
-      challengeId: null,
-      daysAgo: 1,
-      imageUrl:
-        "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?w=1200&h=700&fit=crop&auto=format",
-    },
-  ];
-
-  const postIds: string[] = [];
-  for (const post of postSeeds) {
-    const [row] = await db
-      .insert(schema.posts)
-      .values({
-        userId: post.userId,
-        content: post.content,
-        imageUrl: post.imageUrl,
-        destinationId: post.destinationId,
-        challengeId: post.challengeId,
-        createdAt: daysAgo(post.daysAgo),
-      })
-      .returning();
-    postIds.push(row.id);
-  }
-
-  const reactions: { postId: string; userId: string }[] = [
-    { postId: postIds[0], userId: rohanId },
-    { postId: postIds[0], userId: snehaId },
-    { postId: postIds[1], userId: snehaId },
-    { postId: postIds[2], userId: aaravId },
-    { postId: postIds[3], userId: aaravId },
-    { postId: postIds[3], userId: rohanId },
-  ];
-  for (const reaction of reactions) {
-    await db
-      .insert(schema.postReactions)
-      .values({ ...reaction, reactionType: "like" })
-      .onConflictDoNothing();
-  }
-
-  await db.insert(schema.comments).values([
-    {
-      postId: postIds[0],
-      userId: rohanId,
-      content: "That toy train ride is unbeatable. Did you get the window seats?",
-      createdAt: daysAgo(3),
-    },
-    {
-      postId: postIds[0],
-      userId: snehaId,
-      content: "Adding this to my accessible-trails list — thanks for the detail!",
-      createdAt: daysAgo(2),
-    },
-    {
-      postId: postIds[2],
-      userId: aaravId,
-      content: "Good to know the ferry has roll-on access. Planning Goa for December.",
-      createdAt: daysAgo(1),
-    },
-  ]);
-
-  await db
-    .insert(schema.savedDestinations)
-    .values([
-      { userId: aaravId, destinationId: "matheran" },
-      { userId: aaravId, destinationId: "munnar" },
-    ])
-    .onConflictDoNothing();
+  /* ---------------------------------------------------------------- */
+  /* Sustainable hospitality                                          */
+  /* ---------------------------------------------------------------- */
 
   console.log("→ Seeding sustainable hospitality…");
-
-  const { businesses } = await import("../src/lib/travello-data");
-  const { normaliseAnswers, scoreAssessment } = await import(
-    "../src/lib/hospitality"
-  );
 
   for (const business of businesses) {
     await db
@@ -728,12 +974,16 @@ async function main() {
       comment:
         "No single-use plastic anywhere on the property and the kitchen garden is genuinely used.",
     },
-    {
-      userId: aaravId,
-      rating: 4,
-      comment:
-        "Step-free ground floor worked well for my parents. Would like to see EV charging added.",
-    },
+    ...(testAccount
+      ? [
+          {
+            userId: testAccount.id,
+            rating: 5,
+            comment:
+              "Genuinely plastic-free and the kitchen garden was used every morning. Would stay again.",
+          },
+        ]
+      : []),
   ];
 
   for (const feedback of feedbackSeeds) {
@@ -761,7 +1011,11 @@ async function main() {
 
   console.log("\n✅ Seed complete.");
   console.log(`   Demo login: ${AARAV.email} / ${DEMO_PASSWORD}`);
-  console.log(`   Impact points: ${totalPoints}`);
+  if (testAccount) {
+    console.log(
+      `   Filled account: ${testAccount.name} <${testAccount.email}> (password unchanged)`,
+    );
+  }
 }
 
 /** Builds the raw (pre-normalization) engine payload for a seeded trip. */

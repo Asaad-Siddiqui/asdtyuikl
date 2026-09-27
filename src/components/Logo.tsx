@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { clsx } from "clsx";
 
-import Icon from "@/components/Icon";
-
+/**
+ * The Travello lockup.
+ *
+ * `public/travello-logo.png` is the supplied logo with its white background
+ * removed, so the mark and wordmark sit cleanly on the navbar, the footer and
+ * any other light surface without a white plate behind them.
+ */
 export default function Logo({
   className,
   href = "/",
@@ -13,18 +18,18 @@ export default function Logo({
   return (
     <Link
       href={href}
-      className={clsx(
-        "group inline-flex items-center gap-2.5 rounded-full",
-        className,
-      )}
+      className={clsx("inline-flex items-center", className)}
       aria-label="Travello home"
     >
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-soft transition-transform duration-300 group-hover:scale-105">
-        <Icon name="leaf" className="h-5 w-5" strokeWidth={1.9} />
-      </span>
-      <span className="text-lg font-black tracking-tight text-forest-950">
-        TRAVELLO
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/travello-logo.png"
+        alt=""
+        width={1376}
+        height={319}
+        className="h-8 w-auto sm:h-9"
+      />
+      <span className="sr-only">TRAVELLO</span>
     </Link>
   );
 }

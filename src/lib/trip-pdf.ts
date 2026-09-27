@@ -27,7 +27,7 @@ const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 
 const INK = rgb(0.11, 0.13, 0.12);
 const MUTED = rgb(0.42, 0.45, 0.43);
-const BRAND = rgb(0.13, 0.49, 0.38);
+const BRAND = rgb(0, 0.412, 0.804);
 const RULE = rgb(0.85, 0.87, 0.86);
 
 /**

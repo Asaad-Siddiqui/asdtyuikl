@@ -23,7 +23,7 @@ export type MapWeather = {
 
 /** Impact → colour, matching the twin's own severity bands. */
 export function impactColor(impact: number): string {
-  if (impact < 25) return "#16a34a";
+  if (impact < 25) return "#00a878";
   if (impact < 45) return "#d97706";
   if (impact < 65) return "#ea580c";
   return "#dc2626";
@@ -178,7 +178,7 @@ export default function DigitalTwinMap({
         <p className="mb-1.5 font-bold text-forest-950">Simulated impact</p>
         <div className="space-y-1">
           {[
-            { label: "Normal", color: "#16a34a" },
+            { label: "Normal", color: "#00a878" },
             { label: "Watch", color: "#d97706" },
             { label: "Disrupted", color: "#ea580c" },
             { label: "Severe", color: "#dc2626" },

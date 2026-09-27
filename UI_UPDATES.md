@@ -288,3 +288,48 @@ hospitality read and degrades to "no businesses" rather than blanking a page.
 Verified with `npm run typecheck`, `eslint` (0 errors), `npm run build`, and live
 `curl` calls against `/hospitality`, `/explore/munnar`, and both API routes —
 including the unauthenticated (401) and tampered-payload cases.
+
+## 10. The logo, and the palette that follows it
+
+The two logo files supplied in `materials/` are now the brand. Their white
+backgrounds were removed (the interior white of the mark was kept, so the logo
+never goes see-through on a coloured surface) and they ship as
+`public/travello-logo.png` (the full lockup) and `public/travello-mark.png` (the
+globe on its own). The mark is also the site icon (`src/app/icon.png`).
+
+- The navbar and footer use the full lockup. The signed-in rail uses the lockup
+  when it is open and the mark alone when it is collapsed to an icon strip.
+- Nothing about the old leaf icon or the hand-set "TRAVELLO" text remains in the
+  chrome, so the logo has one source of truth.
+
+The logo turned out to be **azure-led** — the globe is drawn in azure
+(`#0069cd`), cyan (`#06c4f6`), teal (`#02909c`), green (`#00a878`) and amber
+(`#f0a800`). The palette was therefore re-keyed from green to azure so the
+product and the mark agree:
+
+- `primary` and `brand` are now the azure ramp, anchored on the logo's exact
+  `#0069cd`. Buttons, links, focus rings, the eyebrow labels and the active rail
+  icon all follow it.
+- `forest` — the deep scale every page draws its text and dark surfaces from —
+  moved from dark green to a deep steel-blue
+  (`forest-900` `#0e2d45`, `forest-950` `#071d2e`). Headings and body copy are
+  now the same family as the logo instead of fighting it.
+- The landing page's own green oklch tokens (hero scrim, trust strip, section
+  glows, the route strokes and fills, the step panel, the transport tabs) were
+  re-hued to the same azure family. Only the hue moved; the lightness and chroma
+  were left alone, so the page still has exactly the depth it had.
+- The remaining greens are deliberate and are the logo's own green: the eco and
+  "positive" badges, the resolved line in the dashboard chart, and the low-impact
+  colour on the Digital Twin map were all set to the logo's `#00a878`.
+- The warm `sand` / `warm` / `earth` neutrals were left alone — they are what
+  keeps large areas from reading as cold, and the logo's amber sits in that
+  family.
+
+Contrast was re-measured after the swap rather than assumed. Every text and
+background pair on the public page clears the WCAG 4.5:1 minimum (the tightest
+is azure-on-white at 5.4:1); `white on forest-800` — the dark buttons — is
+11.9:1, and the active rail icon at `primary-300 on forest-800` is 6.6:1.
+
+Verified with `npm run typecheck`, `eslint` (0 errors), `npm run build`, and a
+live render of `/` — the compiled stylesheet contains the new tokens and none of
+the old greens, and the new logo is served and referenced by the page.

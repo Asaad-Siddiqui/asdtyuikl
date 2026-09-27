@@ -23,7 +23,7 @@ const LETTERS = ["A", "B", "C", "D"];
 
 /** A bright, even-handed palette so each stop reads as its own beat. */
 const STOP_COLORS = [
-  "#2d7a3e",
+  "#0069cd",
   "#5aa46b",
   "#d9a441",
   "#c9764a",
@@ -214,7 +214,7 @@ export default function TripExperienceView({
                   {comparison.map((entry) => (
                     <Cell
                       key={entry.name}
-                      fill={entry.selected ? "#1f6330" : "#b1d1b7"}
+                      fill={entry.selected ? "#0157a8" : "#bcdbff"}
                     />
                   ))}
                 </Bar>

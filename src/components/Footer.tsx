@@ -12,7 +12,7 @@ const LINKS = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-forest-100 bg-gradient-to-b from-forest-50/70 to-[#eef3ef]">
+    <footer className="border-t border-forest-100 bg-gradient-to-b from-forest-50/70 to-[#eef2f8]">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div className="max-w-sm">
           <Logo />
