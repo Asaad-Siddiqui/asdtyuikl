@@ -45,7 +45,8 @@ two spellings of the same navigation. Now there is only one.
 | **Profile** (`/profile`) | Photo banner, then your details, quick stats and the menu to the rest of the product — emoji replaced with icons | Dashboard vocabulary |
 | **Digital Twin** (`/twin`) | Frame and spacing only — the map, controls and scenario sliders are untouched | — |
 | **Accessibility profile** (`/accessibility`) | Deliberately untouched — it is a full-height questionnaire that runs outside the signed-in frame | — |
-| **Landing page, sign-in/sign-up** | Untouched — public pages keep their own look | — |
+| **Landing page** (`/`) | Rebuilt to the reference: full-bleed hero, trust strip, "Plan. Explore. Make a Difference." step route, then three animated sections | `materials/image copy.png` |
+| **Sign-in / sign-up** | Untouched — still in the older style | — |
 
 The four reference images live in `materials/`. The dashboard, Explore, Trips and
 Challenges follow them closely; the rest follow the same vocabulary (banner, the
@@ -96,9 +97,8 @@ These are the honest gaps, in the order I would tackle them:
    a map inside Explore. An inline map is possible but slower to load.
 3. **Community and Impact are single-column.** They would suit a right-hand rail
    (top contributors, recent badges) like Explore and the dashboard have.
-4. **The landing page and sign-in page** are still in the old style. They are the
-   first thing a new visitor sees, so they are arguably the highest-value next
-   step.
+4. **The sign-in page** is still in the old style. It is the first thing a new
+   visitor sees after the landing page, so it is now the highest-value next step.
 5. **Mobile polish.** The rail becomes a slide-in menu on phones and the bottom
    thumb bar stays — but this has not yet been checked on a real device (see
    DESIGN.md, section 9).
@@ -111,3 +111,113 @@ These are the honest gaps, in the order I would tackle them:
 2. Walk the rail top to bottom — every page now shares the frame.
 3. Press the double-arrow at the top of the rail to collapse it, then reload the
    page: it stays collapsed.
+
+---
+
+## 7. The public landing page
+
+The landing page (`/`) was rebuilt to match `materials/image copy.png`, and some
+of the animation work was ported from the zip in `materials/`. It now reads, top
+to bottom:
+
+1. **Full-bleed hero** — a coastline photograph with a light wash on the left so
+   the headline stays readable. "Travel with a greater purpose.", the two calls
+   to action, and the rating line. The floating white card is a featured
+   destination with its Eco Score and three trait chips, and a dashed route
+   leads away from it to a quieter stop.
+2. **A trust strip** — Sustainable Travel, Accessible Journeys, Support Local,
+   Real Impact, one per column with a divider between them.
+3. **How a trip comes together** — a vertical step selector (Discover / Plan /
+   Go, then track it) on the left driving a dark product preview on the right.
+   Clicking a step swaps the preview: matching places with their eco scores, a
+   draft itinerary with the carbon of each leg, then the impact tally with a
+   progress bar. Arrow keys, Home and End move between the steps.
+
+   This replaced a dotted four-step route that used to sit here. That route was a
+   near-duplicate of **One thoughtful journey** further down the page — two
+   diagrams of the same idea, one after the other. The new section is
+   asymmetric, interactive, and shows the actual product instead of redrawing a
+   route.
+4. **See the difference** — the aeroplane flying from Baga Beach to quieter
+   Morjim Beach, with the two pressure cards either side.
+5. **One thoughtful journey** — five stops on a single dotted route, each card
+   anchored to its node.
+6. **Explore your options** — pick Flight, Train, Bus or Car and the cost, carbon,
+   time and accessibility figures change immediately.
+
+A few honest notes about it:
+
+- **No animation library was added.** The motion is plain CSS and SVG, which is
+  why it works without downloading anything new.
+- **The route geometry is deliberate.** The dotted stage keeps the same aspect
+  ratio as its own drawing, so a stop's dot cannot slide off the line when the
+  window is resized.
+- **The dashed route in the hero is decoration.** It is hidden on phones and
+  tablets, and it is the one part of the page that was placed by hand — it is the
+  most likely thing to want a nudge.
+- **The hero copy is placeholder-friendly.** It says Banff National Park / Canada
+  because the reference did; the card links to the real Manali destination and
+  the wording is safe to swap.
+- I could not check it in a real browser (none is installed here), so the page
+  was verified by compiling and rendering it, not by looking at it.
+
+---
+
+## 8. The richness pass
+
+The landing page was light and correct but washed out, so it was deepened rather
+than redesigned. The light theme stays; it just has colour and weight now.
+
+- **The fog over the hero is gone.** The left half used a near-white overlay at
+  97% opacity, which flattened the photograph. It is now a green-tinted scrim
+  that clears by about three-quarters of the way across, so the coastline keeps
+  its colour while the headline stays readable.
+- **One heading typeface.** The hero title was a serif and every section heading
+  was a sans-serif. All section headings are now the same serif, with tighter
+  tracking and balanced line breaks.
+- **A deeper, greener palette.** The page background, borders, secondary surfaces
+  and muted text all moved a step greener and darker, so large areas read as a
+  considered colour instead of near-white.
+- **Texture and depth.** A fine film grain sits over the hero photograph, the
+  trust strip has a soft green gradient with a hairline highlight along its top,
+  and the step section has a warmer glow behind it. Cards got a hairline inner
+  highlight on top of their shadow so they read as glass rather than flat white.
+- **The photographs inside the sections are less muted.** The haze over the
+  coastline and bus photography came down, so those sections look richer too.
+- **Small finishing details.** Numbers now use tabular figures so columns of
+  figures line up; the hero buttons have visible keyboard focus rings and a
+  pressed state; the play triangle is nudged a pixel so it looks centred in its
+  circle; the footer's internal links now use proper client-side navigation
+  instead of full page reloads, and its surface is tinted to match.
+- **Contrast was measured, not guessed.** Every text-on-background pair on the
+  page was checked against the WCAG 4.5:1 minimum. Deepening the palette pushed
+  the red "high pressure" colour to 3.85:1, so it was darkened until it passes in
+  both directions — 4.69:1 as text, 5.06:1 as a filled badge.
+
+### Then brightened again
+
+The first pass went a shade too heavy, so the page was lifted back up without
+returning to the fog:
+
+- The page now has its own base surface, a near-white green that is brighter
+  than the app's canvas. It is scoped to the landing page, so the signed-in app
+  keeps the tone it already had.
+- The hero's scrim was lifted and its heavy green wash along the bottom cut
+  right back — that wash was the main reason the hero looked murky.
+- Borders, secondary surfaces and the trust strip all came up a step. The strip
+  is now almost pure white with just a hint of green.
+- The step section's corner blob was dark green and sat over the top-right of
+  the section making it read as a shadow. It is now a *light* green highlight,
+  so it adds depth without darkening anything.
+- **The product preview panel went from near-black to a light card.** It was the
+  single largest dark mass on the page. It kept its structure — header, divided
+  rows, coloured figures, progress bar — but on white with a green tint, so the
+  page still has contrast without a black rectangle in the middle of it.
+- Every text and background pair was re-measured after brightening. All pass,
+  including the new figures on the light panel (5.6:1 and 5.1:1) and the
+  progress bar against its own track (3.0:1).
+
+One thing deliberately **not** added: an active-page highlight in the top menu.
+The signed-in rail already marks the current page properly, and the top menu only
+appears on the landing page and the sign-in page, where none of its links are the
+current page — so it would have been code that never runs.

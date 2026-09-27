@@ -25,7 +25,7 @@ export default function Navbar({
   const closeMenu = () => setOpen(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-canvas/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-forest-100 bg-canvas/80 backdrop-blur-md">
       <nav
         aria-label="Main"
         className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"
@@ -38,7 +38,7 @@ export default function Navbar({
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="rounded-full px-3.5 py-2 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900"
+                  className="rounded-full px-3.5 py-2 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                 >
                   {link.label}
                 </Link>
