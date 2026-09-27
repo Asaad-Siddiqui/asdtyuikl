@@ -29,6 +29,13 @@
       "when": 1790449238701,
       "tag": "0003_slim_exiles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790472615230,
+      "tag": "0004_nappy_agent_brand",
+      "breakpoints": true
     }
   ]
 }

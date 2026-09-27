@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-import { aiInsights, businesses } from "@/lib/travello-data";
+import { aiInsights } from "@/lib/travello-data";
 import type {
   AIInsight,
   Business,
@@ -117,7 +117,7 @@ const GUEST_STATE: AppState = {
   stats: GUEST_STATS,
   destinations: [],
   challenges: [],
-  businesses,
+  businesses: [],
   aiInsights,
   completions: [],
   reports: [],
@@ -410,7 +410,7 @@ export function AppProvider({
       stats,
       destinations: initial.destinations,
       challenges: initial.challenges,
-      businesses,
+      businesses: initial.businesses,
       aiInsights,
       completions,
       reports,

@@ -66,6 +66,32 @@ export interface Attraction {
   alternativeId?: string
 }
 
+/**
+ * Sustainable Hospitality.
+ *
+ * A business's sustainability score is never stored on the business: it is
+always derived from its newest checklist submission. Traveller ratings are
+ * derived separately from feedback rows. The two are shown side by side but are
+ * never averaged together — they answer different questions.
+ */
+export interface BusinessAssessmentSummary {
+  /** 0–100, the mean of the five category scores. */
+  overall: number
+  band: 'strong' | 'fair' | 'weak'
+  categories: { key: string; label: string; score: number }[]
+  /** The lowest-scoring categories, worst first (max two). */
+  weakest: string[]
+  suggestions: { category: string; title: string; advice: string }[]
+  submittedAt: string
+}
+
+export interface BusinessTravellerRating {
+  average: number
+  count: number
+  /** The signed-in traveller's own rating, if they have given one. */
+  myRating: number | null
+}
+
 export interface Business {
   id: string
   destinationId: string
@@ -73,14 +99,19 @@ export interface Business {
   type: string
   description: string
   imageUrl: string
-  sustainabilityScore: number
+  /** Nearest town or estate, shown under the name. */
+  locality: string
+  priceRange: string
   accessibilitySummary: string
   sustainabilityPractices: string[]
   accessibilityFeatures: { feature: string; available: boolean }[]
-  priceRange: string
-  rating: number
-  reviews: number
+  /** The business's own checklist result. `null` until one is submitted. */
+  assessment: BusinessAssessmentSummary | null
+  traveller: BusinessTravellerRating | null
 }
+
+/** The fixed half of a business — what gets seeded into the catalogue. */
+export type BusinessProfile = Omit<Business, 'assessment' | 'traveller'>
 
 export interface Challenge {
   id: string

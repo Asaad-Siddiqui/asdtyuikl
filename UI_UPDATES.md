@@ -220,4 +220,71 @@ returning to the fog:
 One thing deliberately **not** added: an active-page highlight in the top menu.
 The signed-in rail already marks the current page properly, and the top menu only
 appears on the landing page and the sign-in page, where none of its links are the
-current page — so it would have been code that never runs.
+current page — so it would have been code that would never run.
+
+## 9. Sustainable Hospitality
+
+A small business-facing section, not a second product. It lives at
+**Sustainable Hospitality** in the sidebar (under More), and every screen reuses
+the existing cards, buttons, icons and colours — the same `PageHero`, `StatTiles`,
+`SectionCard`, `EmptyNote` and `CalloutBar` every other page is built from, with
+the page's own root spacing (`space-y-4 sm:space-y-5`) rather than a bespoke
+layout or extra page padding. Category artwork is drawn from the project's one
+icon family (Lucide) rather than emoji, so it sits alongside the rest of the
+product.
+
+### The two flows
+
+- **A business** answers a ten-point checklist across five categories (Food
+  Waste, Water Efficiency, Energy Efficiency, CO₂ / Transportation, Waste
+  Management), submits, and sees a score out of 100, the five category scores,
+  and the two things worth fixing next.
+- **A traveller** sees that score on the destination's business cards and can
+  leave a 1–5 rating with an optional comment.
+
+### The score is calculated, never written down
+
+The single most important decision: **no score is stored on the business.** The
+business's number comes from its newest checklist submission; the traveller's
+number comes from aggregated feedback. Both are derived at read time, so neither
+can drift from the data behind it, and the two are shown side by side but *never
+averaged together* — one is a self-assessment, the other is what visitors found,
+and the page says so in plain words.
+
+The scoring itself is a dozen lines of arithmetic in `src/lib/hospitality.ts`:
+within a category the load-bearing question counts double, a category scores
+`checked ÷ available`, and the overall score is the mean of the five categories.
+The server re-scores every submission from sanitised answers, so a client cannot
+submit a score of its own — and anything unrecognised in the payload is dropped
+before scoring. A tampered submission can only ever produce a worse (or honest)
+score.
+
+### Data
+
+Three tables, no more: `businesses` (the profile), `business_assessments`
+(append-only, stores both the raw answers and the scores derived from them) and
+`business_feedback` (one row per traveller per business, so re-rating replaces
+rather than inflates). The old `sustainabilityScore`, `rating` and `reviews`
+fields were removed from the fixture — they used to be hardcoded numbers
+that nothing could verify.
+
+### The demo business
+
+**Green Valley Resort — Chithirapuram, Munnar.** Seeded with realistic answers
+(strong food, energy and waste; no EV charging; water metered but no low-flow
+fittings), which scores **80/100** — a figure the seeder computes with the same
+function the API uses. Three seeded traveller ratings put it at **4.3/5**.
+
+### Seeding and verifying
+
+```bash
+npm run db:generate      # writes drizzle/0004_*.sql
+npm run db:migrate       # applies it
+npx tsx scripts/seed.ts  # re-runnable; scores the demo business from its answers
+```
+
+If the tables are missing, the app still works: `loadAppData` catches the
+hospitality read and degrades to "no businesses" rather than blanking a page.
+Verified with `npm run typecheck`, `eslint` (0 errors), `npm run build`, and live
+`curl` calls against `/hospitality`, `/explore/munnar`, and both API routes —
+including the unauthenticated (401) and tampered-payload cases.

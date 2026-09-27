@@ -20,7 +20,9 @@ import {
   type Challenge,
   type Destination,
 } from "@/db/schema";
+import { listBusinesses } from "@/lib/hospitality-service";
 import type {
+  Business as BusinessView,
   Challenge as ChallengeView,
   Destination as DestinationView,
 } from "@/types";
@@ -633,6 +635,12 @@ export type AppData = {
   posts: CommunityPostView[];
   savedDestinationIds: string[];
   trips: SavedTripSummary[];
+  /**
+   * Hospitality businesses with their sustainability score and traveller
+   * rating already derived. Empty if the hospitality tables have not been
+   * migrated yet.
+   */
+  businesses: BusinessView[];
 };
 
 /**
@@ -664,6 +672,18 @@ export async function loadAppData(userId: string): Promise<AppData> {
         .where(eq(trips.userId, userId))
         .orderBy(desc(trips.startDate)),
     ]);
+
+  /**
+   * The hospitality tables are the newest part of the schema. If they are not
+   * migrated yet, the rest of the app must still work — so a failure here
+   * degrades to "no businesses" rather than blanking every page.
+   */
+  let businesses: BusinessView[] = [];
+  try {
+    businesses = await listBusinesses(userId);
+  } catch (error) {
+    console.error("[app-data] could not load hospitality businesses:", error);
+  }
 
   const role =
     account.role === "creator" || account.role === "manager"
@@ -714,6 +734,7 @@ export async function loadAppData(userId: string): Promise<AppData> {
       dataSource: row.dataSource,
       status: row.status,
     })),
+    businesses,
   };
 }
 

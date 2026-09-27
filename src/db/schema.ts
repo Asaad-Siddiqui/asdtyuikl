@@ -522,6 +522,154 @@ export const reports = pgTable(
   (table) => [index("reports_user_idx").on(table.userId)],
 );
 
+/*
+ * ─── Sustainable Hospitality ───────────────────────────────────────────
+ *
+ * A small feature bolted onto the existing catalogue: hospitality businesses
+ * self-assess against a five-category checklist, and travellers rate them
+ * afterwards.
+ *
+ * Note what is deliberately NOT stored on the business row: `sustainabilityScore`,
+ * `rating` and `reviews`. Those used to be hardcoded fixture numbers. The
+ * business score is now derived from its latest assessment and the traveller
+ * score from aggregated feedback, so the two can never be confused and a score
+ * can always be traced back to the answers that produced it.
+ *
+ * Three tables, no more: the profile, the assessment (which stores both the raw
+ * answers and the scores derived from them) and the feedback.
+ */
+
+export type BusinessAccessibilityFeature = {
+  feature: string;
+  available: boolean;
+};
+
+/** One business's self-assessment answers, keyed `category -> question -> yes/no`. */
+export type BusinessAssessmentAnswers = Record<
+  string,
+  Record<string, boolean>
+>;
+
+export type BusinessSuggestion = {
+  category: string;
+  title: string;
+  advice: string;
+};
+
+export const businesses = pgTable(
+  "businesses",
+  {
+    id: text("id").primaryKey(),
+    destinationId: text("destination_id")
+      .notNull()
+      .references(() => destinations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** "homestay" | "resort" | "restaurant" | "experience" | "lodge" | "hotel" */
+    type: text("type").notNull(),
+    description: text("description").notNull(),
+    imageUrl: text("image_url").notNull().default(""),
+    /** Nearest town or estate, shown under the name. */
+    locality: text("locality").notNull().default(""),
+    priceRange: text("price_range").notNull().default(""),
+    accessibilitySummary: text("accessibility_summary").notNull().default(""),
+    sustainabilityPractices: jsonb("sustainability_practices")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    accessibilityFeatures: jsonb("accessibility_features")
+      .$type<BusinessAccessibilityFeature[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("businesses_destination_idx").on(table.destinationId)],
+);
+
+/**
+ * One submitted checklist. Append-only: every submission is kept so the score
+ * history is auditable, and "the current score" is simply the newest row.
+ * `answers` is the raw response set; `overall_score` and `category_scores` are
+ * computed from it server-side on the way in, never supplied by the client.
+ */
+export const businessAssessments = pgTable(
+  "business_assessments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    answers: jsonb("answers")
+      .$type<BusinessAssessmentAnswers>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    overallScore: integer("overall_score").notNull().default(0),
+    categoryScores: jsonb("category_scores")
+      .$type<Record<string, number>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    /** The 1–2 weakest categories at submit time, with the advice shown for them. */
+    suggestions: jsonb("suggestions")
+      .$type<BusinessSuggestion[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    /** Null when the assessment was loaded by the seeder rather than by a person. */
+    submittedByUserId: uuid("submitted_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("business_assessments_business_idx").on(
+      table.businessId,
+      table.createdAt,
+    ),
+  ],
+);
+
+/**
+ * A traveller's sustainability rating for a place they visited.
+ *
+ * One row per (traveller, business) — re-rating updates the existing row rather
+ * than inflating the average, which is what makes the traveller score
+ * trustworthy. Never mixed with the business's own self-assessment score.
+ */
+export const businessFeedback = pgTable(
+  "business_feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** 1–5 stars, validated on the server. */
+    rating: integer("rating").notNull(),
+    comment: text("comment"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("business_feedback_business_user_unique_idx").on(
+      table.businessId,
+      table.userId,
+    ),
+    index("business_feedback_business_idx").on(table.businessId),
+  ],
+);
+
+export type Business = typeof businesses.$inferSelect;
+export type BusinessAssessment = typeof businessAssessments.$inferSelect;
+export type BusinessFeedback = typeof businessFeedback.$inferSelect;
+
 export type Destination = typeof destinations.$inferSelect;
 export type Attraction = typeof attractions.$inferSelect;
 export type Challenge = typeof challenges.$inferSelect;

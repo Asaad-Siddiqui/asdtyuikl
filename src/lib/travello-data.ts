@@ -1,7 +1,7 @@
 import type {
   Destination,
   Challenge,
-  Business,
+  BusinessProfile,
   User,
   Report,
   AIInsight,
@@ -537,15 +537,20 @@ export const challenges: Challenge[] = [
 ]
 
 // ─── Businesses ─────────────────────────────────────────────────────────────
-export const businesses: Business[] = [
+//
+// Profile data only. A business's sustainability score and traveller rating are
+// deliberately absent here — they are derived from its checklist submissions
+// and traveller feedback respectively (see `src/lib/hospitality.ts`). Seeding a
+// fixed score here is what made the old numbers untrustworthy.
+export const businesses: BusinessProfile[] = [
   {
     id: 'biz-1',
     destinationId: 'matheran',
     name: 'Green Valley Heritage Cottage',
     type: 'homestay',
+    locality: 'Matheran, Raigad',
     description: 'A traditional 1920s Sahyadri heritage cottage surrounded by organic gardens, offering local Maharashtrian hospitality and solar power.',
     imageUrl: 'https://images.unsplash.com/photo-1587061949409-02df41d5e562?w=800&h=600&fit=crop&auto=format',
-    sustainabilityScore: 88,
     accessibilitySummary: 'Step-free entrance, ground floor veranda accessible.',
     sustainabilityPractices: ['Solar energy', 'Water conservation', 'Waste segregation', 'Local employment', 'Organic garden'],
     accessibilityFeatures: [
@@ -556,17 +561,15 @@ export const businesses: Business[] = [
       { feature: 'Accessible rooms', available: false },
     ],
     priceRange: '₹1,800–2,800/night',
-    rating: 4.8,
-    reviews: 142,
   },
   {
     id: 'biz-2',
     destinationId: 'matheran',
     name: 'Matheran Forest Organic Café',
     type: 'restaurant',
+    locality: 'Matheran bazaar road',
     description: 'A cozy forest café serving farm-to-table organic meals, herbal infusions, and fresh local chikki with zero single-use plastic.',
     imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&h=600&fit=crop&auto=format',
-    sustainabilityScore: 92,
     accessibilitySummary: 'Ground floor open terrace accessible.',
     sustainabilityPractices: ['Composting', 'Zero plastic policy', 'Local sourcing', 'Rainwater harvesting'],
     accessibilityFeatures: [
@@ -577,17 +580,15 @@ export const businesses: Business[] = [
       { feature: 'Accessible rooms', available: false },
     ],
     priceRange: '₹350–700/meal',
-    rating: 4.7,
-    reviews: 110,
   },
   {
     id: 'biz-3',
     destinationId: 'goa',
     name: 'Palolem Eco Lagoon Resort',
     type: 'resort',
+    locality: 'Palolem, South Goa',
     description: 'A certified green beach eco-retreat in South Goa built from sustainably harvested bamboo and thatch, powered 100% by solar micro-grids.',
     imageUrl: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=600&fit=crop&auto=format',
-    sustainabilityScore: 94,
     accessibilitySummary: 'Complete step-free beachfront boardwalks with beach wheelchair support.',
     sustainabilityPractices: ['100% Solar power', 'Turtle nesting zone protection', 'Organic farm kitchen', 'Greywater bio-filter', 'EV scooter charging'],
     accessibilityFeatures: [
@@ -598,17 +599,15 @@ export const businesses: Business[] = [
       { feature: 'Accessible rooms', available: true },
     ],
     priceRange: '₹4,500–8,500/night',
-    rating: 4.9,
-    reviews: 268,
   },
   {
     id: 'biz-4',
     destinationId: 'goa',
     name: 'Sahakari Farm Spice Walks',
     type: 'experience',
+    locality: 'Ponda spice belt, Goa',
     description: 'Guided regenerative agriculture tours through centuries-old spice forests with local botanical guides and traditional Goan lunch.',
     imageUrl: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=800&h=600&fit=crop&auto=format',
-    sustainabilityScore: 95,
     accessibilitySummary: 'Main spice trail is level and stroller/wheelchair friendly.',
     sustainabilityPractices: ['Organic polyculture', 'Zero synthetic pesticide', 'Local indigenous employment', 'Seed bank conservation'],
     accessibilityFeatures: [
@@ -619,17 +618,15 @@ export const businesses: Business[] = [
       { feature: 'Accessible rooms', available: false },
     ],
     priceRange: '₹500–900/person',
-    rating: 4.9,
-    reviews: 195,
   },
   {
     id: 'biz-5',
     destinationId: 'manali',
     name: 'Kath-Kuni Himalayan Eco Sanctuary',
     type: 'lodge',
+    locality: 'Naggar, Kullu Valley',
     description: 'An authentic mountain sanctuary built with traditional Himachali interlocking deodar wood and stone (Kath-Kuni architecture).',
     imageUrl: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&h=600&fit=crop&auto=format',
-    sustainabilityScore: 89,
     accessibilitySummary: 'Ground floor dining and courtyard accessible.',
     sustainabilityPractices: ['Kath-Kuni seismic heritage architecture', 'Solar thermal underfloor heating', 'Kullu apple agroforestry', 'Zero plastic refill hub'],
     accessibilityFeatures: [
@@ -640,8 +637,33 @@ export const businesses: Business[] = [
       { feature: 'Accessible rooms', available: true },
     ],
     priceRange: '₹3,200–6,000/night',
-    rating: 4.8,
-    reviews: 134,
+  },
+  {
+    id: 'biz-6',
+    destinationId: 'munnar',
+    name: 'Green Valley Resort',
+    type: 'resort',
+    locality: 'Chithirapuram, Munnar',
+    description:
+      'A 24-room cardamom-estate resort on the Munnar–Kochi road, running on a rooftop solar array and supplying its own kitchen garden. The property completed a sustainability assessment with Travello.',
+    imageUrl: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=800&h=600&fit=crop&auto=format',
+    accessibilitySummary:
+      'Step-free entrance and accessible rooms on the ground floor. Accessible toilet in the lobby; no lift to the upper cottages.',
+    sustainabilityPractices: [
+      'Rooftop solar array',
+      'Kitchen-garden sourcing',
+      'Rainwater harvesting',
+      'Daily food-waste weighing',
+      'Guest shuttle from Munnar town',
+    ],
+    accessibilityFeatures: [
+      { feature: 'Step-free entrance', available: true },
+      { feature: 'Accessible parking', available: true },
+      { feature: 'Accessible toilet', available: true },
+      { feature: 'Elevator', available: false },
+      { feature: 'Accessible rooms', available: true },
+    ],
+    priceRange: '₹3,600–6,400/night',
   },
 ]
 

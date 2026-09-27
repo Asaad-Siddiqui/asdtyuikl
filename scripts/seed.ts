@@ -643,6 +643,122 @@ async function main() {
     ])
     .onConflictDoNothing();
 
+  console.log("→ Seeding sustainable hospitality…");
+
+  const { businesses } = await import("../src/lib/travello-data");
+  const { normaliseAnswers, scoreAssessment } = await import(
+    "../src/lib/hospitality"
+  );
+
+  for (const business of businesses) {
+    await db
+      .insert(schema.businesses)
+      .values({
+        id: business.id,
+        destinationId: business.destinationId,
+        name: business.name,
+        type: business.type,
+        description: business.description,
+        imageUrl: business.imageUrl,
+        locality: business.locality,
+        priceRange: business.priceRange,
+        accessibilitySummary: business.accessibilitySummary,
+        sustainabilityPractices: business.sustainabilityPractices,
+        accessibilityFeatures: business.accessibilityFeatures,
+      })
+      .onConflictDoUpdate({
+        target: schema.businesses.id,
+        set: {
+          name: business.name,
+          type: business.type,
+          description: business.description,
+          imageUrl: business.imageUrl,
+          locality: business.locality,
+          priceRange: business.priceRange,
+          accessibilitySummary: business.accessibilitySummary,
+          sustainabilityPractices: business.sustainabilityPractices,
+          accessibilityFeatures: business.accessibilityFeatures,
+        },
+      });
+  }
+
+  /**
+   * One assessed demo business — Green Valley Resort, Munnar. Its score is not
+   * written here: the same `scoreAssessment` the API uses scores these answers,
+   * so the number on screen can never drift from the checklist behind it.
+   */
+  const assessedBusinessId = "biz-6";
+  await db
+    .delete(schema.businessAssessments)
+    .where(eq(schema.businessAssessments.businessId, assessedBusinessId));
+
+  const greenValleyAnswers = normaliseAnswers({
+    food: { "food-monitored": true, "food-reused": true },
+    water: { "water-monitored": true, "water-saving": false },
+    energy: { "energy-efficient": true, "energy-monitored": true },
+    transport: { "transport-shared": true, "transport-ev": false },
+    waste: { "waste-segregated": true, "waste-plastic": true },
+  });
+  const greenValleyScore = scoreAssessment(greenValleyAnswers);
+
+  await db.insert(schema.businessAssessments).values({
+    businessId: assessedBusinessId,
+    answers: greenValleyAnswers,
+    overallScore: greenValleyScore.overallScore,
+    categoryScores: greenValleyScore.categoryScores,
+    suggestions: greenValleyScore.suggestions,
+    submittedByUserId: null,
+    createdAt: daysAgo(6),
+  });
+
+  console.log(
+    `   Green Valley Resort scored ${greenValleyScore.overallScore}/100 from its checklist`,
+  );
+
+  const feedbackSeeds = [
+    {
+      userId: rohanId,
+      rating: 4,
+      comment:
+        "Solar and rainwater harvesting are real here, but the transport to town is still a diesel shuttle.",
+    },
+    {
+      userId: snehaId,
+      rating: 5,
+      comment:
+        "No single-use plastic anywhere on the property and the kitchen garden is genuinely used.",
+    },
+    {
+      userId: aaravId,
+      rating: 4,
+      comment:
+        "Step-free ground floor worked well for my parents. Would like to see EV charging added.",
+    },
+  ];
+
+  for (const feedback of feedbackSeeds) {
+    await db
+      .insert(schema.businessFeedback)
+      .values({
+        businessId: assessedBusinessId,
+        userId: feedback.userId,
+        rating: feedback.rating,
+        comment: feedback.comment,
+        createdAt: daysAgo(3),
+      })
+      .onConflictDoUpdate({
+        target: [
+          schema.businessFeedback.businessId,
+          schema.businessFeedback.userId,
+        ],
+        set: {
+          rating: feedback.rating,
+          comment: feedback.comment,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
   console.log("\n✅ Seed complete.");
   console.log(`   Demo login: ${AARAV.email} / ${DEMO_PASSWORD}`);
   console.log(`   Impact points: ${totalPoints}`);

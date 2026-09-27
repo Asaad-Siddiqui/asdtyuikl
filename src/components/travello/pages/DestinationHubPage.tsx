@@ -16,7 +16,7 @@ import {
   isCrowded,
 } from '@/lib/recommend'
 import { cn, getScoreColor } from '@/lib/format'
-import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, CheckCircle2, XCircle, Accessibility, Store, Users, TrendingDown, Clock } from 'lucide-react'
+import { MapPin, AlertTriangle, Sparkles, ArrowLeft, ChevronRight, Shield, CheckCircle2, XCircle, Accessibility, Store, Users, TrendingDown, Clock, Leaf, Star, Hotel } from 'lucide-react'
 
 export function DestinationHubPage() {
   const { id } = useParams<{ id: string }>()
@@ -476,25 +476,78 @@ export function DestinationHubPage() {
               </div>
 
               <div className="space-y-3">
-                {destBusinesses.map((biz) => (
-                  <div key={biz.id} className="bg-sand-50/80 rounded-2xl p-4 border border-sand-200/60 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-forest-900">{biz.name}</span>
-                      <span className={cn('text-xs font-black px-2 py-0.5 rounded-md bg-white border shadow-2xs', getScoreColor(biz.sustainabilityScore))}>
-                        🌱 {biz.sustainabilityScore}
-                      </span>
+                {destBusinesses.map((biz) => {
+                  const businessScore = biz.assessment?.overall ?? null;
+                  return (
+                    <div key={biz.id} className="bg-sand-50/80 rounded-2xl p-4 border border-sand-200/60 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="block text-sm font-bold text-forest-900">{biz.name}</span>
+                          {biz.locality ? (
+                            <span className="mt-0.5 block text-[11px] text-sand-500">{biz.locality}</span>
+                          ) : null}
+                        </div>
+                        {businessScore !== null ? (
+                          <span
+                            className={cn(
+                              'shrink-0 inline-flex items-center gap-1 text-xs font-black px-2 py-0.5 rounded-md bg-white border shadow-2xs',
+                              getScoreColor(businessScore)
+                            )}
+                          >
+                            <Leaf className="w-3 h-3" />
+                            Sustainability: {businessScore}/100
+                          </span>
+                        ) : (
+                          <span className="shrink-0 rounded-md border border-sand-200 bg-white px-2 py-0.5 text-[11px] font-bold text-sand-500">
+                            Not yet assessed
+                          </span>
+                        )}
+                      </div>
+
+                      {businessScore !== null ? (
+                        <p className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Sustainability assessed
+                        </p>
+                      ) : null}
+
+                      <p className="text-xs text-sand-500 capitalize">{biz.type} • {biz.priceRange}</p>
+
+                      {biz.traveller ? (
+                        <p className="flex items-center gap-1.5 text-[11px] font-bold text-amber-700">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          Traveller rating {biz.traveller.average.toFixed(1)}/5
+                          <span className="font-semibold text-sand-500">
+                            ({biz.traveller.count})
+                          </span>
+                        </p>
+                      ) : null}
+
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {biz.sustainabilityPractices.slice(0, 3).map((p) => (
+                          <span key={p} className="px-2 py-0.5 bg-emerald-100/80 text-emerald-800 text-xs rounded-md font-medium">
+                            {p}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <p className="text-xs text-sand-500 capitalize">{biz.type} • {biz.priceRange}</p>
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {biz.sustainabilityPractices.slice(0, 3).map((p) => (
-                        <span key={p} className="px-2 py-0.5 bg-emerald-100/80 text-emerald-800 text-xs rounded-md font-medium">
-                          {p}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
+
+                {destBusinesses.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-sand-200 bg-sand-50/60 px-4 py-6 text-center text-xs text-sand-500">
+                    No hospitality businesses listed here yet.
+                  </p>
+                ) : null}
               </div>
+
+              <Link
+                to="/hospitality"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-forest-200 bg-forest-50 px-4 py-2.5 text-xs font-bold text-forest-800 transition-colors hover:bg-forest-100"
+              >
+                <Hotel className="w-3.5 h-3.5" />
+                Run a sustainability self-assessment
+              </Link>
             </section>
 
           </div>
