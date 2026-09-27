@@ -88,7 +88,7 @@ function TierCard({
         "rounded-xl border p-3 transition-colors duration-300",
         tier.earned
           ? "border-primary-200 bg-primary-50/60"
-          : "border-sand-200 bg-sand-50/70",
+          : "border-sand-300 bg-sand-50",
       )}
     >
       <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ function TierCard({
             "grid h-7 w-7 shrink-0 place-items-center rounded-lg border",
             tier.earned
               ? "border-primary-200 bg-white text-primary-700"
-              : "border-sand-200 bg-white text-sand-400",
+              : "border-sand-300 bg-white text-sand-800",
           )}
         >
           <Icon className="h-3.5 w-3.5" />
@@ -106,12 +106,12 @@ function TierCard({
           <p
             className={cn(
               "text-[0.8rem] leading-tight font-black",
-              tier.earned ? "text-forest-900" : "text-sand-600",
+              tier.earned ? "text-forest-900" : "text-sand-800",
             )}
           >
             {rank}. {tier.name}
           </p>
-          <p className="text-[10.5px] leading-tight font-semibold text-sand-500">
+          <p className="text-[10.5px] leading-tight font-semibold text-sand-800">
             {tier.requirement}
           </p>
         </div>
@@ -121,7 +121,7 @@ function TierCard({
           </span>
         )}
       </div>
-      <p className="mt-2 text-[10.5px] font-semibold text-sand-500">
+      <p className="mt-2 text-[10.5px] font-semibold text-sand-800">
         🎁 {tier.reward}
       </p>
       <span
@@ -131,7 +131,7 @@ function TierCard({
         <span
           className={cn(
             "block h-full rounded-full transition-all duration-700 ease-out",
-            tier.earned ? "bg-forest-500" : "bg-sand-400",
+            tier.earned ? "bg-forest-500" : "bg-sand-500",
           )}
           style={{ width: `${tier.progressPercent}%` }}
         />
@@ -167,7 +167,7 @@ function RewardCard({
           ? "border-primary-200/80 bg-primary-50/30"
           : goodie.unlocked
             ? "border-forest-200 hover:-translate-y-0.5 hover:shadow-md"
-            : "border-sand-200/80",
+            : "border-sand-300",
         justUnlocked && "animate-pop",
       )}
     >
@@ -178,7 +178,7 @@ function RewardCard({
           alt={goodie.name}
           className={cn(
             "h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105",
-            !goodie.unlocked && "opacity-45 saturate-50",
+            !goodie.unlocked && "opacity-75 saturate-[0.72]",
           )}
           loading="lazy"
         />
@@ -230,7 +230,7 @@ function RewardCard({
               Claim Reward
             </button>
           ) : (
-            <span className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-sand-200 bg-sand-50 py-2 text-[11px] font-bold text-sand-500">
+            <span className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-sand-300 bg-sand-100 py-2 text-[11px] font-bold text-sand-800">
               <Lock className="h-3.5 w-3.5" />
               {goodie.pointsRequired.toLocaleString("en-IN")} pts
             </span>
@@ -291,7 +291,7 @@ export function EcoRewards() {
         >
           <Gift className="h-4 w-4 text-primary-600" />
           Your Eco Rewards
-          <span className="text-sand-400">
+          <span className="text-sand-600">
             ({rewardState.claimedGoodies}/{rewardState.goodies.length} claimed)
           </span>
         </h2>
@@ -315,13 +315,13 @@ export function EcoRewards() {
             <p className="mt-1.5 text-[0.95rem] font-bold text-forest-950">
               {next ? "Next Reward" : "All rewards unlocked"}
             </p>
-            <p className="text-sm font-semibold text-sand-600">
+            <p className="text-sm font-semibold text-sand-800">
               {next ? `🎁 ${next.name}` : "You've earned the whole shelf."}
             </p>
           </div>
 
           <div className="w-full max-w-xs shrink-0">
-            <div className="flex items-center justify-between text-[10.5px] font-bold text-sand-500">
+            <div className="flex items-center justify-between text-[10.5px] font-bold text-sand-800">
               <span>Progress</span>
               <span className="tabular-nums">{progressPercent}%</span>
             </div>
@@ -338,7 +338,7 @@ export function EcoRewards() {
                 style={{ width: `${progressPercent}%` }}
               />
             </span>
-            <p className="mt-1 text-right text-[10.5px] font-semibold text-sand-500 tabular-nums">
+            <p className="mt-1 text-right text-[10.5px] font-semibold text-sand-600 tabular-nums">
               {progressLabel}
             </p>
           </div>
@@ -360,7 +360,7 @@ export function EcoRewards() {
         ))}
       </div>
 
-      <p className="text-[11px] font-semibold text-sand-500">
+      <p className="text-[11px] font-semibold text-sand-600">
         Points are your eco-impact progress — completing verified challenges
         unlocks goodies. Claims are saved to your account.
       </p>
@@ -394,7 +394,7 @@ export function EcoRewards() {
               <button
                 type="button"
                 onClick={() => setClaimTarget(null)}
-                className="rounded-lg p-1 text-sand-400 transition-colors hover:bg-sand-100 hover:text-forest-900"
+                className="rounded-lg p-1 text-sand-600 transition-colors hover:bg-sand-100 hover:text-forest-900"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -416,7 +416,7 @@ export function EcoRewards() {
                     {claimTarget.pointsRequired}
                   </span>
                 </p>
-                <p className="mt-0.5 font-semibold text-sand-500">
+                <p className="mt-0.5 font-semibold text-sand-600">
                   Your points:{" "}
                   <span className="tabular-nums">
                     {rewardState.points.toLocaleString("en-IN")}

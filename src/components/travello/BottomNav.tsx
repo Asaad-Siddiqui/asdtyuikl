@@ -30,7 +30,7 @@ export function BottomNav() {
                 "flex min-w-[56px] flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 transition-all duration-200",
                 active
                   ? "scale-105 bg-forest-100/80 font-bold text-forest-800"
-                  : "font-medium text-sand-600 hover:text-forest-700",
+                  : "font-semibold text-forest-800 hover:text-forest-950",
               )}
             >
               <Icon

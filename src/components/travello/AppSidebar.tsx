@@ -256,13 +256,13 @@ function SidebarPanel({
                 collapsed ? "justify-center px-0 py-3" : "gap-3 px-3.5 py-2.5",
                 active
                   ? "bg-forest-800 text-white shadow-sm shadow-forest-900/25"
-                  : "text-sand-600 hover:bg-forest-50 hover:text-forest-800",
+                  : "text-forest-800 hover:bg-forest-50 hover:text-forest-950",
               )}
             >
               <Icon
                 className={cn(
                   "h-[1.05rem] w-[1.05rem] shrink-0",
-                  active ? "text-primary-300" : "text-sand-400",
+                  active ? "text-primary-300" : "text-forest-600",
                 )}
               />
               {!collapsed && <span className="min-w-0 flex-1 truncate">{label}</span>}
