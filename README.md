@@ -52,7 +52,7 @@ Travello responds with a unified platform for:
 
 **https://asdtyuikl.vercel.app/**
 
-![Travello Green & Inclusive Travel landing page](docs/images/landing.png)
+![Travello Green & Inclusive Travel landing page](docs/images/landing.svg)
 
 The screenshot above was captured from the deployed Vercel application and verified before inclusion.
 
