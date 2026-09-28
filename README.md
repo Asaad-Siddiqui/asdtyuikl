@@ -1,331 +1,253 @@
-# Travello (Wayfare)
+<div align="center">
 
-An AI-assisted, accessibility-first, lower-impact travel platform built with **Next.js 16 + React 19 + TypeScript + Neon + Drizzle**.
+# Travello — Green & Inclusive Travel
 
-It combines:
-- a structured accessibility profile,
-- sustainable trip planning with strict server-side validation,
-- challenge/reward loops,
-- community and incident reporting,
-- sustainable hospitality scoring,
-- and a weather-driven digital twin with advisory output.
+### Smart, sustainable, and accessible journey planning
 
----
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_Travello-0067C5?style=for-the-badge)](https://asdtyuikl.vercel.app/)
+[![HackCelestial](https://img.shields.io/badge/HackCelestial_3.0-Top_50_Team-F59E0B?style=flat-square)](#-hackathon-achievement)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Neon](https://img.shields.io/badge/Neon-PostgreSQL-00E699?style=flat-square&logo=postgresql&logoColor=white)](https://neon.tech/)
 
-## Why this project stands out
+**A full-stack travel platform that helps people choose lower-impact journeys without compromising accessibility, comfort, or practicality.**
 
-Travello is designed with one hard product rule:
+[Live demo](https://asdtyuikl.vercel.app/) · [Features](#-product-features) · [Architecture](#-architecture) · [Setup](#-local-setup) · [Team](#-team-bluevector)
 
-> **AI can suggest, but the app owns structure, validation, security, and persisted truth.**
-
-That rule appears across the codebase:
-- server-only model clients,
-- strict Zod validation and normalization,
-- user-scoped queries in every sensitive path,
-- prototype/estimated labeling for non-verified data,
-- graceful fallbacks when external AI/weather/social sources fail.
+</div>
 
 ---
 
-## Core product surfaces
+## 🏆 Hackathon achievement
 
-### 1) Account + accessibility profile
-- Auth with signup/login/logout APIs (`/api/auth/*`)
-- Signed cookie session (JWT) in `wayfare_session`
-- Conversational accessibility flow at `/accessibility`
-- Profile persisted as structured relational data (not a chat blob)
+Built by **Team BlueVector** for **Pillai Tech Alegria presents HackCelestial 3.0**.
 
-### 2) Trip planner (`/plan`)
-- One-question-at-a-time conversational trip intake
-- Reuses saved accessibility profile automatically
-- Server pipeline: validate request → generate options → normalize/repair → compare
-- Returns **four** options (`option_a`…`option_d`)
-- Supports itinerary modification before confirm
-- Confirm step persists trip and supports PDF download
+The project was selected among the **Top 50 teams**, recognising its combination of sustainable travel recommendations, structured accessibility support, hospitality assessment, community participation, and an AI-assisted planning workflow.
 
-### 3) Traveller app shell
-Protected routes inside `(app)`:
-- `/dashboard`
-- `/explore` and `/explore/[id]`
-- `/trips` and `/trips/[id]`
-- `/challenges` (+ challenge detail/evidence)
-- `/impact`
-- `/reports`
-- `/community`
-- `/hospitality`
-- `/profile`
-- `/twin`
+### PS ID 5 — Green & Inclusive Travel
 
-### 4) Sustainable hospitality
-- Businesses can be assessed via weighted sustainability checklist
-- Traveller ratings and business assessments are stored separately
-- Overall score is derived from latest assessment, not hardcoded
+The challenge asked teams to make travel and hospitality more environmentally responsible, accessible, and inclusive while balancing cost, time, comfort, and convenience.
 
-### 5) Weather-driven digital twin (`/twin`)
-- Simulates destination impact under weather scenarios
-- Uses live weather (Open-Meteo, no key required) with sample fallback
-- Pulls public social signals (Reddit/Mastodon) with sample fallback
-- Provides advisor output via Nugen model with deterministic fallback
+Travello responds with a unified platform for:
 
----
+- lower-impact transport and itinerary recommendations;
+- carbon and sustainability comparisons;
+- mobility and accessibility-aware planning;
+- inclusive destination and activity discovery;
+- sustainable hospitality assessment;
+- eco-challenges, rewards, community reporting, and impact tracking;
+- weather-informed destination simulation and advice.
 
-## Architecture at a glance
+## 👥 Team BlueVector
 
-```text
-Client UI (App Router pages + components)
-  -> Authenticated API routes (/api/*)
-      -> Domain services in src/lib/*
-          -> Drizzle ORM
-              -> Neon PostgreSQL
+| Member | Role |
+| --- | --- |
+| **Asaad Siddiqui** | Full-stack engineering, AI integration, architecture |
+| **Abbas Sayyed** | Team contributor |
+| **Sayyed Alafiya** | Team contributor |
+| **Patel Taiba** | Team contributor |
+| **Shaikh Ayra** | Team contributor |
 
-Trip planning AI path
-  -> /api/trips/plan | /api/trips/modify
-      -> trip-validation.ts (strict request schema)
-      -> trip-planning.ts
-      -> openrouter.ts (server-only)
-      -> trip-schema.ts (extract/repair/normalize)
-      -> compare payload returned to client
+## 🌐 Live demo
 
-Trip persistence path
-  -> /api/trips/confirm
-      -> strict re-validation of selected option
-      -> saveConfirmedTrip() to DB
-      -> /api/trips/[id]/pdf for server-generated PDF
+**https://asdtyuikl.vercel.app/**
+
+![Travello Green & Inclusive Travel landing page](docs/images/landing.svg)
+
+The screenshot above was captured from the deployed Vercel application and verified before inclusion.
+
+## The problem
+
+Travelers often compare price, time, and convenience without reliable information about environmental impact or whether transport, accommodation, and experiences meet mobility, visual, hearing, dietary, or other accessibility requirements.
+
+Hospitality businesses also need practical ways to assess energy, water, waste, mobility, and resource-efficiency opportunities.
+
+Travello combines those needs in one product: **plan inclusive trips, compare lower-impact options, discover suitable experiences, track positive actions, and surface sustainability opportunities.**
+
+## ✨ Product features
+
+### Accessibility-first profile
+
+- Conversational profile setup
+- Structured mobility, visual, hearing, dietary, and personal requirements
+- Saved preferences reused during trip planning
+- Relational persistence rather than an opaque chat transcript
+
+### AI-assisted trip planner
+
+- One-question-at-a-time trip intake
+- Four normalised itinerary options
+- Accessibility and sustainability trade-off comparison
+- Modify-before-confirm workflow
+- Strict server validation before persistence
+- Downloadable PDF itinerary
+
+### Sustainable discovery and mobility
+
+- Eco-score and crowd-pressure signals
+- Lower-impact transport comparison
+- Accessible trail and destination information
+- Walking, cycling, public/shared mobility, and practical alternatives
+
+### Hospitality intelligence
+
+- Weighted sustainability checklist
+- Separate traveller feedback and business assessments
+- Derived environmental-performance score
+- Areas for energy, water, food, transport, and waste improvement
+
+### Community and impact
+
+- Eco-challenges and evidence submissions
+- Reward and points history
+- Community posts, likes, and comments
+- Incident reporting and saved destinations
+- Personal impact dashboard
+
+### Weather-driven digital twin
+
+- Destination simulation under changing weather scenarios
+- Open-Meteo integration with labelled fallback data
+- Public social-signal input with sample fallback
+- AI advisor output with deterministic fallback
+
+## 🧭 Trust and safety principle
+
+> **AI can suggest, but the application owns structure, validation, security, and persisted truth.**
+
+This principle appears throughout the platform:
+
+- AI keys remain in server-only modules.
+- Zod schemas validate and repair generated plans.
+- Sensitive queries are scoped to the authenticated user.
+- Prototype or estimated values are labelled clearly.
+- External AI, weather, and social-source failures fall back gracefully.
+- Confirmed trips are revalidated before database writes.
+
+## 🏗 Architecture
+
+```mermaid
+flowchart LR
+  UI[Next.js 16 + React 19] --> API[Authenticated API routes]
+  API --> Validation[Zod validation and domain services]
+  Validation --> AI[Server-only AI providers]
+  Validation --> ORM[Drizzle ORM]
+  ORM --> DB[Neon PostgreSQL]
+  API --> External[Weather and social signals]
 ```
 
----
+### Technology stack
 
-## Tech stack
-
-| Area | Choice |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| UI | React 19 |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS v4 |
-| DB | Neon PostgreSQL |
-| ORM | Drizzle ORM + Drizzle Kit |
-| Auth | bcrypt + signed JWT session cookie |
+| Layer | Technology |
+| --- | --- |
+| Framework | Next.js 16 App Router |
+| UI | React 19, Tailwind CSS 4 |
+| Language | TypeScript, strict mode |
+| Database | Neon PostgreSQL |
+| ORM | Drizzle ORM and Drizzle Kit |
+| Authentication | bcrypt + signed JWT cookie |
 | Validation | Zod |
-| AI (trip planner) | OpenRouter (server-only) |
-| AI (twin advisor) | Nugen inference (server-only) |
-| PDF | pdf-lib |
-| Charts/Maps | recharts + leaflet |
-| E2E | Playwright scripts |
+| AI planning | OpenRouter, server-only |
+| AI digital-twin advisor | Nugen, server-only |
+| Mapping and charts | Leaflet and Recharts |
+| Documents | pdf-lib |
+| Testing | Playwright E2E and API scripts |
+| Deployment | Vercel |
 
----
-
-## Repository structure
+## 🗂 Repository structure
 
 ```text
-src/
-  app/
-    page.tsx                      public landing
-    auth/page.tsx                 login/signup
-    accessibility/page.tsx        conversational accessibility profile
-
-    (app)/                        protected app shell
-      dashboard/page.tsx
-      explore/page.tsx
-      trips/page.tsx
-      challenges/page.tsx
-      impact/page.tsx
-      reports/page.tsx
-      community/page.tsx
-      hospitality/page.tsx
-      profile/page.tsx
-      plan/page.tsx
-      twin/page.tsx
-
-    api/
-      auth/{signup,login,logout}
-      profile
-      profile/traveller
-      trips/{plan,modify,confirm,[id]/pdf,route}
-      challenges/{start,complete}
-      community/posts(+ likes/comments)
-      destinations/[id]/save
-      reports
-      rewards/claim
-      hospitality/{assess,feedback}
-      weather
-      social-signals
-      ai/{message,advisor}
-
-  components/
-    TripPlanner.tsx
-    ProfileWizard.tsx
-    travello/*                    app shell + pages + UI building blocks
-    twin/*                        map + controls + advisor UI
-
-  lib/
-    auth/session/password helpers
-    profile-*, trip-*, hospitality-* domain modules
-    digital-twin, weather, social-signals, nugen
-
-  db/
-    schema.ts
-
-drizzle/
-  SQL migrations + metadata
-
-scripts/
-  e2e-check.mjs
-  e2e-trip.mjs
-  e2e-trip-api.mjs
-  seed.ts
+.
+├── src/
+│   ├── app/                    # Public, authenticated, and API routes
+│   ├── components/             # Planner, profile, dashboard, and twin UI
+│   ├── db/                     # Drizzle schema
+│   ├── lib/                    # Auth, planning, hospitality, impact, AI services
+│   ├── types/                  # Shared TypeScript contracts
+│   └── proxy.ts                # Central route protection
+├── drizzle/                    # SQL migrations and metadata
+├── public/                     # Product assets
+├── scripts/                    # Seed and E2E flows
+├── docs/images/                # Verified showcase screenshots
+└── .env.example                # Environment template
 ```
 
----
+## 🚀 Local setup
 
-## Data model (high level)
+### Requirements
 
-Main table families in `src/db/schema.ts`:
-
-- **Identity**: `users`
-- **Accessibility profile**:
-  - `accessibility_profiles`
-  - `traveler_types`
-  - `accessibility_requirements`
-  - `dietary_requirements`
-  - `travel_preferences`
-  - `special_requirements`
-- **Trips**: `trips` (itinerary JSON + assumptions + profile snapshot)
-- **Destination ecosystem**:
-  - `destinations`, `attractions`, `challenges`
-  - `user_challenges`, `point_events`
-  - `posts`, `post_reactions`, `comments`
-  - `reports`, `saved_destinations`
-- **Hospitality + rewards**:
-  - `businesses`, `business_assessments`, `business_feedback`
-  - `reward_claims`
-
----
-
-## Security and trust boundaries
-
-- Route protection is centralized in `src/proxy.ts`.
-- Protected pages redirect to `/auth?reason=session` when session is invalid.
-- API auth helper (`requireApiUser`) avoids trusting client-provided user IDs.
-- Data access patterns in service modules scope reads/writes by authenticated user.
-- OpenRouter and Nugen keys are read only in `server-only` modules.
-- Trip confirm endpoint re-validates selected itinerary before persistence.
-- PDF endpoint returns only owner’s trip (`404` for other users).
-
----
-
-## Environment variables
-
-Copy and fill:
+- Node.js 20 or newer
+- npm
+- Neon PostgreSQL database
 
 ```bash
-cp .env.example .env.local
-```
-
-Required:
-- `DATABASE_URL`
-- `AUTH_SECRET`
-- `OPENROUTER_API_KEY` (for trip planning AI)
-- `NUGEN_API_KEY` (for twin advisor AI)
-
-Optional:
-- `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`
-- `OPENROUTER_MODEL`, `OPENROUTER_FALLBACK_MODELS`, `OPENROUTER_SITE_URL`, `OPENROUTER_APP_NAME`
-- `NUGEN_MODEL`, `NUGEN_BASE_URL`
-
-> Never expose these as `NEXT_PUBLIC_*`.
-
----
-
-## Local setup
-
-```bash
+git clone https://github.com/Asaad-Siddiqui/Travello-Green-Inclusive-Travel.git
+cd Travello-Green-Inclusive-Travel
 npm install
+cp .env.example .env.local
 npm run db:migrate
 npm run dev
 ```
 
-Open: `http://localhost:3000`
+Open http://localhost:3000.
 
----
+### Required environment variables
 
-## Scripts
+```text
+DATABASE_URL=
+AUTH_SECRET=
+OPENROUTER_API_KEY=
+NUGEN_API_KEY=
+```
+
+Never expose provider keys as `NEXT_PUBLIC_*` values.
+
+## ✅ Validation commands
 
 ```bash
-npm run dev
-npm run build
-npm run start
 npm run lint
 npm run typecheck
-
-npm run db:generate
-npm run db:migrate
-npm run db:studio
-
+npm run build
 npm run test:e2e
 npm run test:e2e:trip
 npm run test:trip:api
-npm run test:e2e:install
 ```
 
-Demo data seed:
+The project includes coverage for authentication, accessibility-profile completion, responsive layout, trip planning, plan modification, confirmation, PDF output, API guards, owner-only access, and validation failures.
 
-```bash
-npx tsx scripts/seed.ts
-```
+## 🔐 Security highlights
 
----
+- Signed session cookie and central protected-route handling
+- Server-only provider credentials
+- Authenticated, user-scoped data access
+- Revalidation before trip persistence
+- Owner-only PDF and trip access
+- Explicit fallbacks instead of silent fabricated live data
 
-## Testing coverage
+## ⚠ Prototype boundaries
 
-### `npm run test:e2e`
-Covers the account + accessibility journey end-to-end:
-- auth tab switching,
-- full profile completion,
-- redirect behavior,
-- persistence checks,
-- mobile layout sanity checks.
+- Sustainability and carbon figures are estimates, not certified measurements.
+- The catalogue and some external-source fallbacks use seeded demonstration data.
+- There are no live booking or payment integrations.
+- A complete account recovery and production operations pipeline remains future work.
 
-### `npm run test:e2e:trip`
-Covers UI trip-planning flow end-to-end:
-- conversational intake,
-- adaptive questions,
-- loading/progress states,
-- 4-option comparison,
-- modify + confirm + result + PDF pathway,
-- browser-side security assertions.
+## 💼 Resume-ready summary
 
-### `npm run test:trip:api`
-Covers server acceptance/security pipeline:
-- auth guards,
-- strict validation,
-- plan/modify/confirm lifecycle,
-- owner-only access guarantees,
-- PDF integrity checks.
+> Built a Top-50 HackCelestial 3.0 full-stack sustainable and accessible travel platform using Next.js 16, React 19, TypeScript, Neon PostgreSQL, Drizzle ORM, Zod, and server-side AI integrations. Implemented accessibility profiles, multi-option itinerary planning, sustainability scoring, community challenges, hospitality assessment, impact tracking, weather simulation, PDF generation, authenticated APIs, and Playwright validation.
+
+## 🔭 Future improvements
+
+- Certified carbon-data and accessibility providers
+- Live booking and multimodal routing integrations
+- Native notifications and disruption monitoring
+- Business sustainability recommendations with longitudinal tracking
+- More languages, currencies, and regional accessibility standards
+- Expanded automated accessibility and visual regression testing
 
 ---
 
-## Notes on external dependencies and fallback behavior
+<div align="center">
 
-The app is intentionally resilient:
-- OpenRouter congestion/failure -> prototype itinerary fallback
-- Nugen unavailable -> deterministic advisor fallback
-- Weather/social source failure -> labeled sample feeds
+**Team BlueVector · Top 50 · HackCelestial 3.0**
 
-This keeps product flows operational during demos and development while making fallback status explicit in UI.
-
----
-
-## Known prototype boundaries
-
-Travello is a production-style architecture over a prototype dataset. Current boundaries include:
-- seeded catalogue and demo-oriented assumptions,
-- estimated (not certified) emissions and impact metrics,
-- no live booking/payment integrations,
-- no full account recovery pipeline.
-
----
-
-## License
-
-Use according to repository owner policy.
+</div>
